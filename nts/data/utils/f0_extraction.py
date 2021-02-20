@@ -37,7 +37,7 @@ def extract_f0_with_crepe(
 
 
 def extract_f0_with_pyin(
-    audios: Sequence[np.ndarray],
+    audio: np.ndarray,
     sample_rate: float,
     minimum_frequency: float = 65.0,  # recommended minimum freq from librosa docs
     maximum_frequency: float = 2093.0,  # recommended maximum freq from librosa docs
@@ -45,8 +45,7 @@ def extract_f0_with_pyin(
     hop_length: int = 128,
     fill_na: Optional[float] = None,
 ):
-    results = [
-        librosa.pyin(
+    results = librosa.pyin(
             audio,
             sr=sample_rate,
             fmin=minimum_frequency,
@@ -55,7 +54,5 @@ def extract_f0_with_pyin(
             hop_length=hop_length,
             fill_na=fill_na,
         )
-        for audio in audios
-    ]
 
-    return [(f0, voiced_prob) for f0, _, voiced_prob in results]
+    return results
