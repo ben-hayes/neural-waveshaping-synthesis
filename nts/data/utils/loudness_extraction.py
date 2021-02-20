@@ -2,6 +2,7 @@ from functools import partial
 from typing import Sequence
 import warnings
 
+import gin
 import librosa
 import numpy as np
 
@@ -39,6 +40,7 @@ def perform_perceptual_weighting(
     return weighted_spectrogram
 
 
+@gin.configurable
 def extract_perceptual_loudness(
     audio: np.ndarray,
     sample_rate: float = 16000,
@@ -58,6 +60,7 @@ def extract_perceptual_loudness(
     return loudness
 
 
+@gin.configurable
 def extract_rms(audio: np.ndarray, window_size: int = 2048, hop_length: int = 512):
     frames = librosa.util.frame(audio, window_size, hop_length)
     squared = frames ** 2

@@ -1,6 +1,7 @@
 from functools import partial
 from typing import Optional, Sequence, Union
 
+import gin
 import librosa
 import numpy as np
 import torch
@@ -9,8 +10,9 @@ import torchcrepe
 from ...utils import apply
 
 
+@gin.configurable
 def extract_f0_with_crepe(
-    audios: np.ndarray,
+    audio: np.ndarray,
     sample_rate: float,
     hop_length_in_samples: int = 128,
     minimum_frequency: float = 50.0,
@@ -36,6 +38,7 @@ def extract_f0_with_crepe(
     return results
 
 
+@gin.configurable
 def extract_f0_with_pyin(
     audio: np.ndarray,
     sample_rate: float,

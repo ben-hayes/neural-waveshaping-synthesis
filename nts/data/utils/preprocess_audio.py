@@ -1,5 +1,7 @@
 from functools import partial
+from typing import Callable
 
+import gin
 import numpy as np
 import resampy
 import scipy.io.wavfile as wavfile
@@ -58,13 +60,12 @@ def resample_audio(audio, original_sr, target_sr):
     return resampy.resample(audio, original_sr, target_sr)
 
 
+@gin.configurable
 def preprocess_audio(
     files: list,
     target_sr: float = 16000,
-    f0_extractor: str = "crepe",
-    f0_params: dict = {},
-    loudness_extractor: str = "perceptual",
-    loudness_params: dict = {},
+    f0_extractor: Callable = extract_f0_with_crepe,
+    loudness_extractor: Callable = extract_perceptual_loudness,
 ):
     print("Loading audio files...")
     rates, audios = read_audio_files(files)
@@ -75,26 +76,8 @@ def preprocess_audio(
     resample_to_target = partial(resample_audio, target_sr=target_sr)
     audios = apply_unpack(resample_to_target, list(zip(audios, rates)))
 
-    if f0_extractor == "crepe":
-        f0_fn = extract_f0_with_crepe
-    elif f0_extractor == "pyin":
-        f0_fn = extract_f0_with_pyin
-    else:
-        raise ValueError(
-            "Unknown f0 extractor. Supported extractor strings are ('crepe', 'pyin')"
-        )
-    print("Extracting f0 with extractor '%s'" % f0_extractor)
-    extract_f0 = partial(f0_fn, sample_rate=target_sr, **f0_params)
-    f0s_and_confidences = apply(extract_f0, audios)
+    print("Extracting f0 with extractor '%s'" % f0_extractor.__name__)
+    f0s_and_confidences = apply(f0_extractor, audios)
 
-    if loudness_extractor == "perceptual":
-        loudness_fn = extract_perceptual_loudness
-    elif loudness_extractor == "rms":
-        loudness_fn = extract_rms
-    else:
-        raise ValueError(
-            "Unknown loudness extractor. Supported extractor strings are ('perceptual', 'rms')"
-        )
-    print("Extracting loudness with extractor '%s'" % loudness_extractor)
-    extract_loudness = partial(loudness_fn, **loudness_params)
-    loudness = apply(extract_loudness, audios)
+    print("Extracting loudness with extractor '%s'" % loudness_extractor.__name__)
+    loudness = apply(loudness_extractor, audios)

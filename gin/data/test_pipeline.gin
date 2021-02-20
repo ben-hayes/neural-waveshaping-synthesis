@@ -1,0 +1,10 @@
+sample_rate = 16000
+
+load_files.directory = "test_audio"
+
+extract_f0_with_pyin.sample_rate = %sample_rate
+extract_perceptual_loudness.sample_rate = %sample_rate
+
+preprocess_audio.target_sr = %sample_rate
+preprocess_audio.f0_extractor = @extract_f0_with_pyin
+preprocess_audio.loudness_extractor = @extract_perceptual_loudness

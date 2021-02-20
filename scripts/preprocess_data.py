@@ -1,17 +1,23 @@
 import os
 
 import click
+import gin
 
 from nts.data.utils.preprocess_audio import preprocess_audio
 
+@gin.configurable
+def load_files(directory):
+    return [os.path.join(directory, f) for f in os.listdir(directory) if ".wav" in f]
 
 @click.command()
-@click.option("--directory", prompt="Audio directory")
-@click.option("--target-sr", default=16000)
-@click.option("--f0-extractor", default="crepe")
-def hello(directory, target_sr, f0_extractor):
-    files = [os.path.join(directory, f) for f in os.listdir(directory) if ".wav" in f]
-    preprocess_audio(files, target_sr=target_sr, f0_extractor=f0_extractor)
+@click.option("--gin-file", prompt="Gin config file")
+def main(gin_file):
+    gin.parse_config_file(gin_file)
+    files = load_files()
+    preprocess_audio(
+        files,
+    )
+
 
 if __name__ == "__main__":
-    hello()
+    main()
