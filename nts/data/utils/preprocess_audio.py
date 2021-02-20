@@ -4,7 +4,7 @@ import numpy as np
 import resampy
 import scipy.io.wavfile as wavfile
 
-from .f0_extraction import extract_f0_with_crepe
+from .f0_extraction import extract_f0_with_crepe, extract_f0_with_pyin
 from ...utils import apply, apply_unpack, unzip
 
 
@@ -57,19 +57,28 @@ def resample_audio(audio, original_sr, target_sr):
     return resampy.resample(audio, original_sr, target_sr)
 
 
-def preprocess_audio(files: list, target_sr: float = 16000, f0_params: dict = {}):
+def preprocess_audio(
+    files: list,
+    target_sr: float = 16000,
+    f0_extractor: str = "crepe",
+    f0_params: dict = {},
+):
     print("Loading audio files...")
     rates, audios = read_audio_files(files)
     audios = apply(convert_to_float32_audio, audios)
     audios = apply(make_monophonic, audios)
 
-    add_channel_dim = partial(np.expand_dims, axis=0)
-    audios = apply(add_channel_dim, audios)
-
     print("Resampling audio files...")
     resample_to_target = partial(resample_audio, target_sr=target_sr)
     audios = apply_unpack(resample_to_target, list(zip(audios, rates)))
 
-    print("Extracting F0 with CREPE")
-    f0s_and_confidences = extract_f0_with_crepe(audios, target_sr, *f0_params)
+    if f0_extractor == "crepe":
+        print("Extracting F0 with CREPE...")
+        f0s_and_confidences = extract_f0_with_crepe(audios, target_sr, **f0_params)
+    elif f0_extractor == "pyin":
+        f0s_and_confidences = extract_f0_with_pyin(audios, target_sr, **f0_params)
+        print("Extracting F0 with pYIN...")
+        pass
+    else:
+        raise ValueError("Unknown f0 extractor. Supported extractor strings are ('crepe', 'pyin')")
     print(f0s_and_confidences)
