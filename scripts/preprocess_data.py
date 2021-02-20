@@ -1,10 +1,16 @@
 import os
 
+import click
+
 from nts.data.utils.preprocess_audio import preprocess_audio
 
-if __name__ == "__main__":
-    files = [
-        f for f in os.listdir("/import/c4dm-datasets/URMP/Dataset/08_Spring_fl_vn/") 
-        if ".wav" in f
-    ]
+
+@click.command()
+@click.option("--directory", prompt="Audio directory")
+def hello(directory):
+    print(directory)
+    files = [os.path.join(directory, f) for f in os.listdir(directory) if ".wav" in f]
     preprocess_audio(files)
+
+if __name__ == "__main__":
+    hello()
