@@ -93,11 +93,11 @@ def preprocess_audio(
     resample_to_target = partial(resample_audio, target_sr=target_sr)
     audios = apply_unpack(resample_to_target, list(zip(audios, rates)))
 
-    print("Extracting f0 with extractor '%s'" % f0_extractor.__name__)
+    print("Extracting f0 with extractor '%s'..." % f0_extractor.__name__)
     f0s_and_confidences = apply(f0_extractor, audios)
     f0s, confidences = unzip(f0s_and_confidences)
 
-    print("Extracting loudness with extractor '%s'" % loudness_extractor.__name__)
+    print("Extracting loudness with extractor '%s'..." % loudness_extractor.__name__)
     loudness = apply(loudness_extractor, audios)
 
     print("Segmenting audio...")
