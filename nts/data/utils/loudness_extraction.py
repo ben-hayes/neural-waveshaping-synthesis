@@ -62,7 +62,9 @@ def extract_perceptual_loudness(
 
 @gin.configurable
 def extract_rms(audio: np.ndarray, window_size: int = 2048, hop_length: int = 512):
-    frames = librosa.util.frame(audio, window_size, hop_length)
+    # pad audio to centre frames
+    padded_audio = np.pad(audio, (window_size // 2, window_size // 2))
+    frames = librosa.util.frame(padded_audio, window_size, hop_length)
     squared = frames ** 2
     mean = np.mean(squared, axis=0)
     root = np.sqrt(mean)

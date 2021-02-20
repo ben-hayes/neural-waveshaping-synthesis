@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Optional, Sequence, Union
+from typing import Callable, Optional, Sequence, Union
 
 import gin
 import librosa
@@ -7,6 +7,7 @@ import numpy as np
 import torch
 import torchcrepe
 
+from .upsampling import linear_interpolation
 from ...utils import apply
 
 
@@ -20,10 +21,11 @@ def extract_f0_with_crepe(
     full_model: bool = True,
     batch_size: int = 2048,
     device: Union[str, torch.device] = "cpu",
+    interpolate_fn: Optional[Callable] = linear_interpolation,
 ):
     # convert to torch tensor with channel dimension (necessary for CREPE)
     audio = torch.tensor(audio).unsqueeze(0)
-    results = torchcrepe.predict(
+    f0, confidence = torchcrepe.predict(
         audio,
         sample_rate,
         hop_length_in_samples,
@@ -35,7 +37,21 @@ def extract_f0_with_crepe(
         decoder=torchcrepe.decode.weighted_argmax,
     )
 
-    return results
+    f0, confidence = f0.numpy(), confidence.numpy()
+
+    if interpolate_fn:
+        f0 = interpolate_fn(
+            f0, sample_rate, frame_length, hop_length, original_length=audio.size
+        )
+        confidence = interpolate_fn(
+            confidence,
+            sample_rate,
+            frame_length,
+            hop_length,
+            original_length=audio.size,
+        )
+
+    return f0, confidence
 
 
 @gin.configurable
@@ -47,8 +63,9 @@ def extract_f0_with_pyin(
     frame_length: int = 1024,
     hop_length: int = 128,
     fill_na: Optional[float] = None,
+    interpolate_fn: Optional[Callable] = linear_interpolation,
 ):
-    f0, voiced, voiced_prob = librosa.pyin(
+    f0, _, voiced_prob = librosa.pyin(
         audio,
         sr=sample_rate,
         fmin=minimum_frequency,
@@ -57,5 +74,17 @@ def extract_f0_with_pyin(
         hop_length=hop_length,
         fill_na=fill_na,
     )
+
+    if interpolate_fn:
+        f0 = interpolate_fn(
+            f0, sample_rate, frame_length, hop_length, original_length=audio.size
+        )
+        voiced_prob = interpolate_fn(
+            voiced_prob,
+            sample_rate,
+            frame_length,
+            hop_length,
+            original_length=audio.size,
+        )
 
     return f0, voiced_prob
