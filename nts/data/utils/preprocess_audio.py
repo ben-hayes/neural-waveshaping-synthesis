@@ -5,6 +5,7 @@ import resampy
 import scipy.io.wavfile as wavfile
 
 from .f0_extraction import extract_f0_with_crepe, extract_f0_with_pyin
+from .loudness_extraction import extract_perceptual_loudness, extract_rms_amplitude
 from ...utils import apply, apply_unpack, unzip
 
 
@@ -62,6 +63,8 @@ def preprocess_audio(
     target_sr: float = 16000,
     f0_extractor: str = "crepe",
     f0_params: dict = {},
+    loudness_extractor: str = "perceptual",
+    loudness_params: dict = {},
 ):
     print("Loading audio files...")
     rates, audios = read_audio_files(files)
@@ -76,9 +79,19 @@ def preprocess_audio(
         print("Extracting F0 with CREPE...")
         f0s_and_confidences = extract_f0_with_crepe(audios, target_sr, **f0_params)
     elif f0_extractor == "pyin":
-        f0s_and_confidences = extract_f0_with_pyin(audios, target_sr, **f0_params)
         print("Extracting F0 with pYIN...")
+        f0s_and_confidences = extract_f0_with_pyin(audios, target_sr, **f0_params)
         pass
     else:
-        raise ValueError("Unknown f0 extractor. Supported extractor strings are ('crepe', 'pyin')")
-    print(f0s_and_confidences)
+        raise ValueError(
+            "Unknown f0 extractor. Supported extractor strings are ('crepe', 'pyin')"
+        )
+
+    if loudness_extractor == "perceptual":
+        loudness = extract_perceptual_loudness(audios, target_sr, **loudness_params)
+    elif loudness_extractor == "rms":
+        loudness = extract_rms_amplitude(audios, **loudness_params)
+    else:
+        raise ValueError(
+            "Unknown loudness extractor. Supported extractor strings are ('perceptual', 'rms')"
+        )
