@@ -5,7 +5,7 @@ import resampy
 import scipy.io.wavfile as wavfile
 
 from .f0_extraction import extract_f0_with_crepe, extract_f0_with_pyin
-from .loudness_extraction import extract_perceptual_loudness, extract_rms_amplitude
+from .loudness_extraction import extract_perceptual_loudness, extract_rms
 from ...utils import apply, apply_unpack, unzip
 
 
@@ -88,10 +88,12 @@ def preprocess_audio(
         )
 
     if loudness_extractor == "perceptual":
-        loudness = extract_perceptual_loudness(audios, target_sr, **loudness_params)
+        loudness_fn = extract_perceptual_loudness
     elif loudness_extractor == "rms":
-        loudness = extract_rms_amplitude(audios, **loudness_params)
+        loudness_fn = extract_rms
     else:
         raise ValueError(
             "Unknown loudness extractor. Supported extractor strings are ('perceptual', 'rms')"
         )
+    extract_loudness = partial(loudness_fn, **loudness_params)
+    loudness = apply(extract_loudness, audios)
