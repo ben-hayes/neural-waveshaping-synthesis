@@ -10,7 +10,7 @@ from ...utils import apply
 
 
 def extract_f0_with_crepe(
-    audios: Sequence[np.ndarray],
+    audios: np.ndarray,
     sample_rate: float,
     hop_length_in_samples: int = 128,
     minimum_frequency: float = 50.0,
@@ -19,27 +19,19 @@ def extract_f0_with_crepe(
     batch_size: int = 2048,
     device: Union[str, torch.device] = "cpu",
 ):
-    # convert to torch tensor
-    audios = apply(torch.tensor, audios)
-
-    # add leading channel dimension (necessary for CREPE)
-    add_channel_dim = partial(torch.unsqueeze, dim=0)
-    audios = apply(add_channel_dim, audios)
-
-    results = [
-        torchcrepe.predict(
-            audio,
-            sample_rate,
-            hop_length_in_samples,
-            minimum_frequency,
-            maximum_frequency,
-            "full" if full_model else "tiny",
-            batch_size=batch_size,
-            device=device,
-            decoder=torchcrepe.decode.weighted_argmax,
-        )
-        for audio in audios
-    ]
+    # convert to torch tensor with channel dimension (necessary for CREPE)
+    audio = torch.tensor(audio).unsqueeze(0)
+    results = torchcrepe.predict(
+        audio,
+        sample_rate,
+        hop_length_in_samples,
+        minimum_frequency,
+        maximum_frequency,
+        "full" if full_model else "tiny",
+        batch_size=batch_size,
+        device=device,
+        decoder=torchcrepe.decode.weighted_argmax,
+    )
 
     return results
 
@@ -67,4 +59,3 @@ def extract_f0_with_pyin(
     ]
 
     return [(f0, voiced_prob) for f0, _, voiced_prob in results]
-

@@ -76,16 +76,16 @@ def preprocess_audio(
     audios = apply_unpack(resample_to_target, list(zip(audios, rates)))
 
     if f0_extractor == "crepe":
-        print("Extracting F0 with CREPE...")
-        f0s_and_confidences = extract_f0_with_crepe(audios, target_sr, **f0_params)
+        f0_fn = extract_f0_with_crepe
     elif f0_extractor == "pyin":
-        print("Extracting F0 with pYIN...")
-        f0s_and_confidences = extract_f0_with_pyin(audios, target_sr, **f0_params)
-        pass
+        f0_fn = extract_f0_with_pyin
     else:
         raise ValueError(
             "Unknown f0 extractor. Supported extractor strings are ('crepe', 'pyin')"
         )
+    print("Extracting f0 with extractor '%s'" % f0_extractor)
+    extract_f0 = partial(f0_fn, sample_rate=target_sr, **f0_params)
+    f0s_and_confidences = apply(extract_f0, audios)
 
     if loudness_extractor == "perceptual":
         loudness_fn = extract_perceptual_loudness
@@ -95,5 +95,6 @@ def preprocess_audio(
         raise ValueError(
             "Unknown loudness extractor. Supported extractor strings are ('perceptual', 'rms')"
         )
+    print("Extracting loudness with extractor '%s'" % loudness_extractor)
     extract_loudness = partial(loudness_fn, **loudness_params)
     loudness = apply(extract_loudness, audios)
