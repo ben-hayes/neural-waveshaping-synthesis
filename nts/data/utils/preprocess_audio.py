@@ -2,6 +2,7 @@ from functools import partial
 from typing import Callable
 
 import gin
+import librosa
 import numpy as np
 import resampy
 import scipy.io.wavfile as wavfile
@@ -12,7 +13,7 @@ from ...utils import apply, apply_unpack, unzip
 
 
 def read_audio_files(files: list):
-    rates_and_audios = [wavfile.read(file) for file in files]
+    rates_and_audios = apply(wavfile.read, files)
     return unzip(rates_and_audios)
 
 
@@ -56,14 +57,30 @@ def make_monophonic(audio: np.ndarray, strategy: str = "keep_left"):
         return audio[0] - audio[1]
 
 
-def resample_audio(audio, original_sr, target_sr):
+def resample_audio(audio: np.ndarray, original_sr: float, target_sr: float):
     return resampy.resample(audio, original_sr, target_sr)
+
+
+def segment_audio(
+    audio: np.ndarray,
+    sample_rate: float,
+    segment_length_in_seconds: float,
+    hop_length_in_seconds: float,
+):
+    segment_length_in_samples = int(sample_rate * segment_length_in_seconds)
+    hop_length_in_samples = int(sample_rate * hop_length_in_seconds)
+    segments = librosa.util.frame(
+        audio, segment_length_in_samples, hop_length_in_samples
+    )
+    return segments
 
 
 @gin.configurable
 def preprocess_audio(
     files: list,
     target_sr: float = 16000,
+    segment_length_in_seconds: float = 4.0,
+    hop_length_in_seconds: float = 2.0,
     f0_extractor: Callable = extract_f0_with_crepe,
     loudness_extractor: Callable = extract_perceptual_loudness,
 ):
@@ -78,6 +95,16 @@ def preprocess_audio(
 
     print("Extracting f0 with extractor '%s'" % f0_extractor.__name__)
     f0s_and_confidences = apply(f0_extractor, audios)
+    f0s, confidences = unzip(f0s_and_confidences)
 
     print("Extracting loudness with extractor '%s'" % loudness_extractor.__name__)
     loudness = apply(loudness_extractor, audios)
+
+    print("Segmenting audio...")
+    segment_fn = partial(
+        segment_audio,
+        sample_rate=target_sr,
+        segment_length_in_seconds=segment_length_in_seconds,
+        hop_length_in_seconds=hop_length_in_seconds,
+    )
+    segmented_audio = apply(segment_fn, audios)
