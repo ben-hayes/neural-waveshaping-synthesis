@@ -48,14 +48,14 @@ def extract_f0_with_pyin(
     hop_length: int = 128,
     fill_na: Optional[float] = None,
 ):
-    results = librosa.pyin(
-            audio,
-            sr=sample_rate,
-            fmin=minimum_frequency,
-            fmax=maximum_frequency,
-            frame_length=frame_length,
-            hop_length=hop_length,
-            fill_na=fill_na,
-        )
+    f0, voiced, voiced_prob = librosa.pyin(
+        audio,
+        sr=sample_rate,
+        fmin=minimum_frequency,
+        fmax=maximum_frequency,
+        frame_length=frame_length,
+        hop_length=hop_length,
+        fill_na=fill_na,
+    )
 
-    return results
+    return f0, voiced_prob
