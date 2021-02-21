@@ -1,5 +1,5 @@
 sample_rate = 16000
-interpolation = @cubic_spline_interpolation
+interpolation = @overlap_add_upsample
 
 load_files.directory = "test_audio"
 
