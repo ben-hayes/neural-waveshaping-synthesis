@@ -1,4 +1,5 @@
 sample_rate = 16000
+interpolation = @cubic_spline_interpolation
 
 load_files.directory = "test_audio"
 
@@ -6,8 +7,10 @@ load_files.directory = "test_audio"
 extract_f0_with_crepe.sample_rate = %sample_rate
 extract_f0_with_crepe.device = "cuda:0"
 extract_f0_with_crepe.full_model = False
+extract_f0_with_crepe.interpolate_fn = %interpolation
 
 extract_perceptual_loudness.sample_rate = %sample_rate
+extract_perceptual_loudness.interpolate_fn = %interpolation
 # extract_rms.sample_rate = %sample_rate
 
 preprocess_audio.target_sr = %sample_rate
