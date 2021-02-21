@@ -8,7 +8,8 @@ extract_f0_with_crepe.device = "cuda:0"
 extract_f0_with_crepe.full_model = False
 
 extract_perceptual_loudness.sample_rate = %sample_rate
+# extract_rms.sample_rate = %sample_rate
 
 preprocess_audio.target_sr = %sample_rate
 preprocess_audio.f0_extractor = @extract_f0_with_crepe
-preprocess_audio.loudness_extractor = @extract_rms
+preprocess_audio.loudness_extractor = @extract_perceptual_loudness

@@ -1,11 +1,12 @@
 from functools import partial
-from typing import Sequence
+from typing import Callable, Optional, Sequence
 import warnings
 
 import gin
 import librosa
 import numpy as np
 
+from .upsampling import linear_interpolation
 from ...utils import apply
 
 
@@ -48,6 +49,7 @@ def extract_perceptual_loudness(
     hop_length: int = 512,
     window: str = "hann",
     epsilon: float = 1e-5,
+    interpolate_fn: Optional[Callable] = linear_interpolation,
 ):
     power_spectrogram = compute_power_spectrogram(
         audio, n_fft=n_fft, hop_length=hop_length, window=window, epsilon=epsilon
@@ -56,16 +58,34 @@ def extract_perceptual_loudness(
         power_spectrogram, sample_rate=sample_rate, n_fft=n_fft
     )
     loudness = np.mean(perceptually_weighted_spectrogram, axis=0)
+    if interpolate_fn:
+        loudness = interpolate_fn(
+            loudness, sample_rate, n_fft, hop_length, original_length=audio.size
+        )
 
     return loudness
 
 
 @gin.configurable
-def extract_rms(audio: np.ndarray, window_size: int = 2048, hop_length: int = 512):
+def extract_rms(
+    audio: np.ndarray,
+    window_size: int = 2048,
+    hop_length: int = 512,
+    sample_rate: Optional[float] = 16000.,
+    interpolate_fn: Optional[Callable] = linear_interpolation,
+):
     # pad audio to centre frames
     padded_audio = np.pad(audio, (window_size // 2, window_size // 2))
     frames = librosa.util.frame(padded_audio, window_size, hop_length)
     squared = frames ** 2
     mean = np.mean(squared, axis=0)
     root = np.sqrt(mean)
+    if interpolate_fn:
+        assert sample_rate is not None, "Must provide sample rate if upsampling"
+        root = interpolate_fn(
+            root, sample_rate, window_size, hop_length, original_length=audio.size
+        )
+    
+    print(audio.shape)
+    print(root.shape)
     return root
