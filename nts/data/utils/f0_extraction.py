@@ -11,11 +11,13 @@ from .upsampling import linear_interpolation
 from ...utils import apply
 
 
+CREPE_WINDOW_LENGTH = 1024
+
 @gin.configurable
 def extract_f0_with_crepe(
     audio: np.ndarray,
     sample_rate: float,
-    hop_length_in_samples: int = 128,
+    hop_length: int = 128,
     minimum_frequency: float = 50.0,
     maximum_frequency: float = 550.0,
     full_model: bool = True,
@@ -28,27 +30,28 @@ def extract_f0_with_crepe(
     f0, confidence = torchcrepe.predict(
         audio,
         sample_rate,
-        hop_length_in_samples,
+        hop_length,
         minimum_frequency,
         maximum_frequency,
         "full" if full_model else "tiny",
         batch_size=batch_size,
         device=device,
         decoder=torchcrepe.decode.weighted_argmax,
+        return_harmonicity=True,
     )
 
-    f0, confidence = f0.numpy(), confidence.numpy()
+    f0, confidence = f0.squeeze().numpy(), confidence.squeeze().numpy()
 
     if interpolate_fn:
         f0 = interpolate_fn(
-            f0, sample_rate, frame_length, hop_length, original_length=audio.size
+            f0, sample_rate, CREPE_WINDOW_LENGTH, hop_length, original_length=audio.shape[-1]
         )
         confidence = interpolate_fn(
             confidence,
             sample_rate,
-            frame_length,
+            CREPE_WINDOW_LENGTH,
             hop_length,
-            original_length=audio.size,
+            original_length=audio.shape[-1],
         )
 
     return f0, confidence
