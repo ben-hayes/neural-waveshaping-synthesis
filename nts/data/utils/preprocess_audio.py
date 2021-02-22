@@ -128,11 +128,16 @@ def preprocess_single_audio_file(
         loudness, target_sr, segment_length_in_seconds, hop_length_in_seconds
     )
 
-    segmented_audio, segmented_f0, segmented_confidence = filter_segments(
+    filtered_audio, filtered_f0, filtered_loudness = filter_segments(
         confidence_threshold,
         segmented_confidence,
         (segmented_audio, segmented_f0, segmented_loudness),
     )
+
+    split = lambda x: np.split(x, x.shape[-1], -1)
+    audio_split = split(filtered_audio)
+    f0_split = split(filtered_f0)
+    loudness_split = split(filtered_loudness)
 
     return segmented_audio, segmented_f0, segmented_confidence, segmented_loudness
 
@@ -146,6 +151,7 @@ def preprocess_audio(
     confidence_threshold: float = 0.85,
     f0_extractor: Callable = extract_f0_with_crepe,
     loudness_extractor: Callable = extract_perceptual_loudness,
+    lazy: bool = True,
 ):
     processor = partial(
         preprocess_single_audio_file,
@@ -155,4 +161,8 @@ def preprocess_audio(
         f0_extractor=f0_extractor,
         loudness_extractor=loudness_extractor,
     )
-    processed = apply(processor, files)
+    if lazy:
+        for file in files:
+            yield processor(file)
+    else:
+        return apply(processor, files)
