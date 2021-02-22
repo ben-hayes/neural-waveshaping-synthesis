@@ -36,7 +36,8 @@ def extract_f0_with_crepe(
         "full" if full_model else "tiny",
         batch_size=batch_size,
         device=device,
-        decoder=torchcrepe.decode.weighted_argmax,
+        decoder=torchcrepe.decode.viterbi,
+        # decoder=torchcrepe.decode.weighted_argmax,
         return_harmonicity=True,
     )
 
@@ -44,11 +45,10 @@ def extract_f0_with_crepe(
 
     if interpolate_fn:
         f0 = interpolate_fn(
-            f0, sample_rate, CREPE_WINDOW_LENGTH, hop_length, original_length=audio.shape[-1]
+            f0, CREPE_WINDOW_LENGTH, hop_length, original_length=audio.shape[-1]
         )
         confidence = interpolate_fn(
             confidence,
-            sample_rate,
             CREPE_WINDOW_LENGTH,
             hop_length,
             original_length=audio.shape[-1],
@@ -80,14 +80,13 @@ def extract_f0_with_pyin(
 
     if interpolate_fn:
         f0 = interpolate_fn(
-            f0, sample_rate, frame_length, hop_length, original_length=audio.size
+            f0, frame_length, hop_length, original_length=audio.shape[-1]
         )
         voiced_prob = interpolate_fn(
             voiced_prob,
-            sample_rate,
             frame_length,
             hop_length,
-            original_length=audio.size,
+            original_length=audio.shape[-1],
         )
 
     return f0, voiced_prob

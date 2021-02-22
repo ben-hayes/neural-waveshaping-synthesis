@@ -60,7 +60,7 @@ def extract_perceptual_loudness(
     loudness = np.mean(perceptually_weighted_spectrogram, axis=0)
     if interpolate_fn:
         loudness = interpolate_fn(
-            loudness, sample_rate, n_fft, hop_length, original_length=audio.size
+            loudness, n_fft, hop_length, original_length=audio.size
         )
 
     return loudness
@@ -83,9 +83,7 @@ def extract_rms(
     if interpolate_fn:
         assert sample_rate is not None, "Must provide sample rate if upsampling"
         root = interpolate_fn(
-            root, sample_rate, window_size, hop_length, original_length=audio.size
+            root, window_size, hop_length, original_length=audio.size
         )
     
-    print(audio.shape)
-    print(root.shape)
     return root

@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Callable
+from typing import Callable, Sequence
 
 import gin
 import librosa
@@ -61,8 +61,8 @@ def resample_audio(audio: np.ndarray, original_sr: float, target_sr: float):
     return resampy.resample(audio, original_sr, target_sr)
 
 
-def segment_audio(
-    audio: np.ndarray,
+def segment_signal(
+    signal: np.ndarray,
     sample_rate: float,
     segment_length_in_seconds: float,
     hop_length_in_seconds: float,
@@ -70,9 +70,71 @@ def segment_audio(
     segment_length_in_samples = int(sample_rate * segment_length_in_seconds)
     hop_length_in_samples = int(sample_rate * hop_length_in_seconds)
     segments = librosa.util.frame(
-        audio, segment_length_in_samples, hop_length_in_samples
+        signal, segment_length_in_samples, hop_length_in_samples
     )
     return segments
+
+
+def filter_segments(
+    threshold: float,
+    key_segments: np.ndarray,
+    segments: Sequence[np.ndarray],
+):
+    mean_keys = key_segments.mean(axis=0)
+    mask = mean_keys > threshold
+    filtered_segments = apply(lambda x: x[:, mask], segments)
+    return filtered_segments
+
+
+def preprocess_single_audio_file(
+    file: str,
+    target_sr: float = 16000.0,
+    segment_length_in_seconds: float = 4.0,
+    hop_length_in_seconds: float = 2.0,
+    confidence_threshold: float = 0.85,
+    f0_extractor: Callable = extract_f0_with_crepe,
+    loudness_extractor: Callable = extract_perceptual_loudness,
+):
+    print("Loading audio file: %s..." % file)
+    original_sr, audio = wavfile.read(file)
+    audio = convert_to_float32_audio(audio)
+    audio = make_monophonic(audio)
+
+    print("Resampling audio file: %s..." % file)
+    audio = resample_audio(audio, original_sr, target_sr)
+
+    print("Extracting f0 with extractor '%s': %s..." % (f0_extractor.__name__, file))
+    f0, confidence = f0_extractor(audio)
+
+    print(
+        "Extracting loudness with extractor '%s': %s..."
+        % (loudness_extractor.__name__, file)
+    )
+    loudness = loudness_extractor(audio)
+
+    print("Segmenting audio file: %s..." % file)
+    segmented_audio = segment_signal(
+        audio, target_sr, segment_length_in_seconds, hop_length_in_seconds
+    )
+
+    print("Segmenting control signals: %s..." % file)
+    segmented_f0 = segment_signal(
+        f0, target_sr, segment_length_in_seconds, hop_length_in_seconds
+    )
+    segmented_confidence = segment_signal(
+        confidence, target_sr, segment_length_in_seconds, hop_length_in_seconds
+    )
+    segmented_loudness = segment_signal(
+        loudness, target_sr, segment_length_in_seconds, hop_length_in_seconds
+    )
+
+    segmented_audio, segmented_f0, segmented_confidence = filter_segments(
+        confidence_threshold,
+        segmented_confidence,
+        (segmented_audio, segmented_f0, segmented_loudness),
+    )
+
+    return segmented_audio, segmented_f0, segmented_confidence, segmented_loudness
 
 
 @gin.configurable
@@ -81,30 +143,16 @@ def preprocess_audio(
     target_sr: float = 16000,
     segment_length_in_seconds: float = 4.0,
     hop_length_in_seconds: float = 2.0,
+    confidence_threshold: float = 0.85,
     f0_extractor: Callable = extract_f0_with_crepe,
     loudness_extractor: Callable = extract_perceptual_loudness,
 ):
-    print("Loading audio files...")
-    rates, audios = read_audio_files(files)
-    audios = apply(convert_to_float32_audio, audios)
-    audios = apply(make_monophonic, audios)
-
-    print("Resampling audio files...")
-    resample_to_target = partial(resample_audio, target_sr=target_sr)
-    audios = apply_unpack(resample_to_target, list(zip(audios, rates)))
-
-    print("Extracting f0 with extractor '%s'..." % f0_extractor.__name__)
-    f0s_and_confidences = apply(f0_extractor, audios)
-    f0s, confidences = unzip(f0s_and_confidences)
-
-    print("Extracting loudness with extractor '%s'..." % loudness_extractor.__name__)
-    loudness = apply(loudness_extractor, audios)
-
-    print("Segmenting audio...")
-    segment_fn = partial(
-        segment_audio,
-        sample_rate=target_sr,
+    processor = partial(
+        preprocess_single_audio_file,
+        target_sr=target_sr,
         segment_length_in_seconds=segment_length_in_seconds,
         hop_length_in_seconds=hop_length_in_seconds,
+        f0_extractor=f0_extractor,
+        loudness_extractor=loudness_extractor,
     )
-    segmented_audio = apply(segment_fn, audios)
+    processed = apply(processor, files)
