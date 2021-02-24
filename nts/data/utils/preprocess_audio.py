@@ -56,6 +56,10 @@ def make_monophonic(audio: np.ndarray, strategy: str = "keep_left"):
     elif strategy == "diff":
         return audio[0] - audio[1]
 
+def normalise_signal(audio: np.ndarray, epsilon: float = 1e-8):
+    max_value = max(np.abs(audio).max(), epsilon)
+    return audio / max_value
+
 
 def resample_audio(audio: np.ndarray, original_sr: float, target_sr: float):
     return resampy.resample(audio, original_sr, target_sr)
@@ -94,11 +98,15 @@ def preprocess_single_audio_file(
     confidence_threshold: float = 0.85,
     f0_extractor: Callable = extract_f0_with_crepe,
     loudness_extractor: Callable = extract_perceptual_loudness,
+    normalise_audio: bool = False,
 ):
     print("Loading audio file: %s..." % file)
     original_sr, audio = wavfile.read(file)
     audio = convert_to_float32_audio(audio)
     audio = make_monophonic(audio)
+
+    if normalise_audio:
+        audio = normalise_signal(audio)
 
     print("Resampling audio file: %s..." % file)
     audio = resample_audio(audio, original_sr, target_sr)
@@ -134,12 +142,12 @@ def preprocess_single_audio_file(
         (segmented_audio, segmented_f0, segmented_loudness),
     )
 
-    split = lambda x: np.split(x, x.shape[-1], -1)
+    split = lambda x: [e.squeeze() for e in np.split(x, x.shape[-1], -1)]
     audio_split = split(filtered_audio)
     f0_split = split(filtered_f0)
     loudness_split = split(filtered_loudness)
 
-    return segmented_audio, segmented_f0, segmented_confidence, segmented_loudness
+    return audio_split, f0_split, loudness_split
 
 
 @gin.configurable
@@ -151,7 +159,7 @@ def preprocess_audio(
     confidence_threshold: float = 0.85,
     f0_extractor: Callable = extract_f0_with_crepe,
     loudness_extractor: Callable = extract_perceptual_loudness,
-    lazy: bool = True,
+    normalise_audio: bool = False,
 ):
     processor = partial(
         preprocess_single_audio_file,
@@ -160,9 +168,7 @@ def preprocess_audio(
         hop_length_in_seconds=hop_length_in_seconds,
         f0_extractor=f0_extractor,
         loudness_extractor=loudness_extractor,
+        normalise_audio=normalise_audio,
     )
-    if lazy:
-        for file in files:
-            yield processor(file)
-    else:
-        return apply(processor, files)
+    for file in files:
+        yield processor(file)

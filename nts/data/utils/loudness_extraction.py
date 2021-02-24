@@ -37,7 +37,7 @@ def perform_perceptual_weighting(
         weights = librosa.A_weighting(centre_frequencies)
 
     weights = np.expand_dims(weights, axis=1)
-    weighted_spectrogram = power_spectrogram_in_db + weights
+    weighted_spectrogram = power_spectrogram_in_db #+ weights
     return weighted_spectrogram
 
 
@@ -50,6 +50,7 @@ def extract_perceptual_loudness(
     window: str = "hann",
     epsilon: float = 1e-5,
     interpolate_fn: Optional[Callable] = linear_interpolation,
+    normalise: bool = True,
 ):
     power_spectrogram = compute_power_spectrogram(
         audio, n_fft=n_fft, hop_length=hop_length, window=window, epsilon=epsilon
@@ -62,6 +63,9 @@ def extract_perceptual_loudness(
         loudness = interpolate_fn(
             loudness, n_fft, hop_length, original_length=audio.size
         )
+    
+    if normalise:
+        loudness = (loudness + 80) / 80
 
     return loudness
 
