@@ -1,5 +1,6 @@
 import math
 
+import gin
 import torch
 import torch.nn
 
@@ -9,7 +10,7 @@ class Wavetable(nn.Module):
         self,
         wavetable_length: int,
         n_wavetables: int = 1,
-        sample_rate: int = 16000,
+        sample_rate: float = 16000,
         initialisation: str = "sine",
     ):
         super().__init__()

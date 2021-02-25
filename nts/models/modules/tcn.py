@@ -13,7 +13,9 @@ class CausalTCNBlock(nn.Module):
         out_channels: int,
         kernel_size: int,
         dilation: int,
+        lookahead: int = 0,
         nonlinearity: Union[Callable, nn.Module] = nn.ReLU,
+        final_nonlinearity: bool = True,
     ):
         super().__init__()
         self.net = nn.Sequential(
@@ -22,7 +24,7 @@ class CausalTCNBlock(nn.Module):
             nonlinearity,
             CausalPad(kernel_size * dilation - dilation, lookahead),
             nn.Conv1d(out_channels, out_channels, kernel_size, dilation=dilation),
-            nonlinearity,
+            nonlinearity if final_nonlinearity else lambda x: x,
         )
         self.rescale = (
             nn.Conv1d(in_channels, out_channels, 1)
@@ -54,7 +56,7 @@ class CausalTCN(nn.Module):
                 kernel_size,
                 dilation ** d,
                 lookahead,
-                bias,
+                final_nonlinearity=True if d < depth - 1 else False,
             )
             for d in range(depth)
         ]
