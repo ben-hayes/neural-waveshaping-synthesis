@@ -142,10 +142,14 @@ def preprocess_single_audio_file(
         (segmented_audio, segmented_f0, segmented_loudness),
     )
 
-    split = lambda x: [e.squeeze() for e in np.split(x, x.shape[-1], -1)]
-    audio_split = split(filtered_audio)
-    f0_split = split(filtered_f0)
-    loudness_split = split(filtered_loudness)
+    if filtered_audio.shape[-1] == 0:
+        print("No segments exceeding confidence threshold...")
+        audio_split, f0_split, loudness_split = [], [], []
+    else:
+        split = lambda x: [e.squeeze() for e in np.split(x, x.shape[-1], -1)]
+        audio_split = split(filtered_audio)
+        f0_split = split(filtered_f0)
+        loudness_split = split(filtered_loudness)
 
     return audio_split, f0_split, loudness_split
 

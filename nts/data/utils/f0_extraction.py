@@ -19,7 +19,7 @@ def extract_f0_with_crepe(
     sample_rate: float,
     hop_length: int = 128,
     minimum_frequency: float = 50.0,
-    maximum_frequency: float = 550.0,
+    maximum_frequency: float = 2000.0,
     full_model: bool = True,
     batch_size: int = 2048,
     device: Union[str, torch.device] = "cpu",

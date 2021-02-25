@@ -98,6 +98,10 @@ def lazy_create_dataset(
             audio_files.append(audio_file_name)
             control_files.append(control_file_name)
 
+    if len(audio_files) == 0:
+        print("No datapoints to split. Skipping...")
+        return
+
     splits = make_splits(audio_files, control_files, splits, split_proportions)
     for split in splits:
         for audio_file in splits[split]["audio"]:
