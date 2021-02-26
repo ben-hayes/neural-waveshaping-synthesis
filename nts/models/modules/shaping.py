@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from .activations import MultiActivationBank
-from .dynamic import FiLM, TimeDistributedMLP
+from .dynamic import Dynamic1dConv, FiLM, TimeDistributedMLP
 from .generators import ParallelNoise
 from .utils import CausalPad
 
@@ -15,6 +15,7 @@ class NoiseSaturateFilter(nn.Module):
         filter_taps: int = 128,
         noise_channels: int = 1,
         control_embedding_size: int = 32,
+        dynamic_filter: bool = False,
     ):
         super().__init__()
         self.conditioning = TimeDistributedMLP(
@@ -32,14 +33,25 @@ class NoiseSaturateFilter(nn.Module):
         )
         self.noise = ParallelNoise(noise_channels)
         self.film2 = FiLM()
-        self.filter = nn.Sequential(
-            CausalPad(filter_taps - 1),
-            nn.Conv1d(
+        self.padding = CausalPad(filter_taps - 1)
+
+        self.dynamic_filter = dynamic_filter
+        if dynamic_filter:
+            self.filter = Dynamic1dConv(
                 in_channels + noise_channels,
                 out_channels,
                 filter_taps,
-            ),
-        )
+                control_embedding_size,
+            )
+        else:
+            self.filter = nn.Sequential(
+                CausalPad(filter_taps - 1),
+                nn.Conv1d(
+                    in_channels + noise_channels,
+                    out_channels,
+                    filter_taps,
+                ),
+            )
 
     def _get_conditioning(self, control_embedding):
         conditioning = self.conditioning(control_embedding)
@@ -58,6 +70,9 @@ class NoiseSaturateFilter(nn.Module):
         x = self.saturate(x)
         x = self.noise(x)
         x = self.film2(x, g2, b2)
-        x = self.filter(x)
+        if self.dynamic_filter:
+            x = self.filter(x, control_embedding)
+        else:
+            x = self.filter(x)
 
         return x
