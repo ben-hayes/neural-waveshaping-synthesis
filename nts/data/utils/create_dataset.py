@@ -78,12 +78,17 @@ def lazy_create_dataset(
 ):
     audio_files = []
     control_files = []
+    audio_max = 1e-5
 
     for i, (all_audio, all_f0, all_loudness) in enumerate(preprocess_audio(files)):
         file = os.path.split(files[i])[-1].replace(".wav", "")
         for j, (audio, f0, loudness) in enumerate(zip(all_audio, all_f0, all_loudness)):
             audio_file_name = "audio_%s_%d.npy" % (file, j)
             control_file_name = "control_%s_%d.npy" % (file, j)
+
+            max_sample = np.abs(audio).max()
+            if max_sample > audio_max:
+                audio_max = max_sample
 
             np.save(
                 os.path.join(output_directory, "temp", "audio", audio_file_name),
@@ -105,10 +110,9 @@ def lazy_create_dataset(
     splits = make_splits(audio_files, control_files, splits, split_proportions)
     for split in splits:
         for audio_file in splits[split]["audio"]:
-            os.rename(
-                os.path.join(output_directory, "temp", "audio", audio_file),
-                os.path.join(output_directory, split, "audio", audio_file),
-            )
+            audio = np.load(os.path.join(output_directory, "temp", "audio", audio_file))
+            audio = audio / audio_max
+            np.save(os.path.join(output_directory, split, "audio", audio_file), audio)
         for control_file in splits[split]["control"]:
             os.rename(
                 os.path.join(output_directory, "temp", "control", control_file),
@@ -130,5 +134,5 @@ def create_dataset(
 
     if lazy:
         lazy_create_dataset(files, output_directory, splits, split_proportions)
-    
+
     shutil.rmtree(os.path.join(output_directory, "temp"))

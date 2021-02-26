@@ -2,8 +2,9 @@ from typing import Callable, Union
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
-from .utils import CausalPad
+from .utils import CausalPad, Identity
 
 
 class CausalTCNBlock(nn.Module):
@@ -21,10 +22,10 @@ class CausalTCNBlock(nn.Module):
         self.net = nn.Sequential(
             CausalPad(kernel_size * dilation - dilation, lookahead),
             nn.Conv1d(in_channels, out_channels, kernel_size, dilation=dilation),
-            nonlinearity,
+            nonlinearity(),
             CausalPad(kernel_size * dilation - dilation, lookahead),
             nn.Conv1d(out_channels, out_channels, kernel_size, dilation=dilation),
-            nonlinearity if final_nonlinearity else lambda x: x,
+            nonlinearity() if final_nonlinearity else Identity(),
         )
         self.rescale = (
             nn.Conv1d(in_channels, out_channels, 1)

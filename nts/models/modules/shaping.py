@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 
 from .activations import MultiActivationBank
-from .dynamic import FiLM
+from .dynamic import FiLM, TimeDistributedMLP
 from .generators import ParallelNoise
-from .utils import CausalPad, TimeDistributedMLP
+from .utils import CausalPad
 
 
 class NoiseSaturateFilter(nn.Module):
@@ -33,9 +33,11 @@ class NoiseSaturateFilter(nn.Module):
         self.noise = ParallelNoise(noise_channels)
         self.film2 = FiLM()
         self.filter = nn.Sequential(
-            CausalPad(filter_taps),
+            CausalPad(filter_taps - 1),
             nn.Conv1d(
-                in_channels + noise_channels, out_channels, filter_taps, bias=False
+                in_channels + noise_channels,
+                out_channels,
+                filter_taps,
             ),
         )
 
@@ -58,4 +60,4 @@ class NoiseSaturateFilter(nn.Module):
         x = self.film2(x, g2, b2)
         x = self.filter(x)
 
-        return x, control_embedding
+        return x

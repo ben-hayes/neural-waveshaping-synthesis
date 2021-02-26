@@ -2,7 +2,8 @@ import math
 
 import gin
 import torch
-import torch.nn
+import torch.nn as nn
+import torch.nn.functional as F
 
 
 class Wavetable(nn.Module):
@@ -15,7 +16,7 @@ class Wavetable(nn.Module):
     ):
         super().__init__()
         self.wavetable_length = wavetable_length
-        self.sr = sr
+        self.sr = sample_rate
 
         if initialisation == "sine":
             sinusoid = torch.sin(

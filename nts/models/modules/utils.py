@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class CausalPad(nn.Module):
@@ -10,3 +11,8 @@ class CausalPad(nn.Module):
 
     def forward(self, x: torch.Tensor):
         return F.pad(x, (self.pad_size - self.lookahead, self.lookahead))
+
+
+class Identity(nn.Module):
+    def forward(self, x):
+        return x
