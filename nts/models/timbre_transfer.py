@@ -28,6 +28,7 @@ class TimbreTransfer(pl.LightningModule):
         wavetable_dim: int = 256,
         num_wavetables: int = 1,
         wavetable_init: str = "sine",
+        target_shift: int = 0,
         learning_rate: float = 1e-3,
         patience: int = 25,
     ):
@@ -35,6 +36,7 @@ class TimbreTransfer(pl.LightningModule):
         self.save_hyperparameters()
         self.learning_rate = learning_rate
         self.patience = patience
+        self.target_shift = target_shift
 
         self.sample_rate = sample_rate
 
@@ -123,8 +125,14 @@ class TimbreTransfer(pl.LightningModule):
         control = batch["control"].float()
 
         recon = self(control)
+        recon_shifted = recon[:, self.target_shift :]
+        audio_shifted = (
+            audio[:, : -self.target_shift] if self.target_shift > 0 else audio
+        )
 
-        loss = self.stft_loss(recon, audio) + self.stat_loss(recon, audio)
+        loss = self.stft_loss(recon_shifted, audio_shifted) + self.stat_loss(
+            recon_shifted, audio_shifted
+        )
         return loss, recon, audio
 
     def _log_audio(self, name, audio):
@@ -139,14 +147,24 @@ class TimbreTransfer(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         loss, _, _ = self._run_step(batch)
         self.log(
-            "train/loss", loss.item(), on_step=True, on_epoch=True, prog_bar=True, logger=True
+            "train/loss",
+            loss.item(),
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
         )
         return loss
 
     def validation_step(self, batch, batch_idx):
         loss, recon, audio = self._run_step(batch)
         self.log(
-            "val/loss", loss.item(), on_step=False, on_epoch=True, prog_bar=True, logger=True
+            "val/loss",
+            loss.item(),
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
         )
         if batch_idx == 0:
             self._log_audio("original", audio[0].detach().cpu().squeeze())

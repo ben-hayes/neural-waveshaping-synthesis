@@ -2,5 +2,6 @@ TimbreTransfer.filterbank_channels = 16
 TimbreTransfer.fir_taps = 128
 TimbreTransfer.dynamic_filter = True
 TimbreTransfer.tcn_channels = 16
+TimbreTransfer.target_shift = 256
 
 URMPDataModule.batch_size = 16
