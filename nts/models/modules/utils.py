@@ -16,3 +16,11 @@ class CausalPad(nn.Module):
 class Identity(nn.Module):
     def forward(self, x):
         return x
+
+class View(nn.Module):
+    def __init__(self, *out_shape):
+        super().__init__()
+        self.out_shape = out_shape
+    
+    def forward(self, x):
+        return x.view(*self.out_shape)

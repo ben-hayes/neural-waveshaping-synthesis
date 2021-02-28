@@ -1,4 +1,5 @@
 import auraloss
+import gin
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
@@ -10,12 +11,14 @@ from .modules.shaping import NoiseSaturateFilter
 from .modules.tcn import CausalTCN
 
 
+@gin.configurable
 class TimbreTransfer(pl.LightningModule):
     def __init__(
         self,
         control_embedding_size: int = 16,
         filterbank_channels: int = 14,
         fir_taps: int = 128,
+        dynamic_filter: bool = True,
         noise_channels: int = 1,
         tcn_channels: int = 24,
         tcn_kernel_size: int = 8,
@@ -26,10 +29,13 @@ class TimbreTransfer(pl.LightningModule):
         num_wavetables: int = 1,
         wavetable_init: str = "sine",
         learning_rate: float = 1e-3,
+        patience: int = 25,
     ):
         super().__init__()
         self.save_hyperparameters()
         self.learning_rate = learning_rate
+        self.patience = patience
+
         self.sample_rate = sample_rate
 
         self.embedding = CausalTCN(
@@ -53,6 +59,7 @@ class TimbreTransfer(pl.LightningModule):
                     fir_taps,
                     noise_channels,
                     control_embedding_size,
+                    dynamic_filter=dynamic_filter,
                 ),
                 NoiseSaturateFilter(
                     filterbank_channels,
@@ -60,6 +67,7 @@ class TimbreTransfer(pl.LightningModule):
                     fir_taps,
                     noise_channels,
                     control_embedding_size,
+                    dynamic_filter=dynamic_filter,
                 ),
                 NoiseSaturateFilter(
                     filterbank_channels,
@@ -67,6 +75,7 @@ class TimbreTransfer(pl.LightningModule):
                     fir_taps,
                     noise_channels,
                     control_embedding_size,
+                    dynamic_filter=dynamic_filter,
                 ),
             ]
         )
@@ -105,7 +114,7 @@ class TimbreTransfer(pl.LightningModule):
         self.stat_loss = WaveformStatisticLoss()
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, factor=0.316228, patience=True
+            optimizer, factor=0.316228, patience=self.patience
         )
         return {"optimizer": optimizer, "scheduler": scheduler, "monitor": "val/loss"}
 

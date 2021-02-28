@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from .activations import MultiActivationBank
-from .dynamic import Dynamic1dConv, FiLM, TimeDistributedMLP
+from .dynamic import DynamicFFTConv1d, FiLM, TimeDistributedMLP
 from .generators import ParallelNoise
 from .utils import CausalPad
 
@@ -37,10 +37,11 @@ class NoiseSaturateFilter(nn.Module):
 
         self.dynamic_filter = dynamic_filter
         if dynamic_filter:
-            self.filter = Dynamic1dConv(
+            self.filter = DynamicFFTConv1d(
                 in_channels + noise_channels,
                 out_channels,
                 filter_taps,
+                filter_taps // 2,
                 control_embedding_size,
             )
         else:

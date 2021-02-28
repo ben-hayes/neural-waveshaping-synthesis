@@ -1,5 +1,6 @@
 import os
 
+import gin
 import numpy as np
 import pytorch_lightning as pl
 import torch
@@ -30,6 +31,7 @@ class URMPDataset(torch.utils.data.Dataset):
         return {"audio": audio, "control": control}
 
 
+@gin.configurable
 class URMPDataModule(pl.LightningDataModule):
     def __init__(
         self, urmp_root: str, instrument: str, batch_size: int = 16, **dataloader_args
