@@ -10,12 +10,14 @@ from nts.models.timbre_transfer import TimbreTransfer
 @click.option("--gin-file", prompt="Gin config file")
 @click.option("--device", default="cuda")
 @click.option("--instrument", default="vn")
-def main(gin_file, device, instrument):
+@click.option("--load-data-to-memory", default=True)
+def main(gin_file, device, instrument, load_data_to_memory):
     gin.parse_config_file(gin_file)
     model = TimbreTransfer(learning_rate=1e-3)
     data = URMPDataModule(
         "/import/c4dm-datasets/URMP/synth-dataset/4-second-segments",
         instrument,
+        load_to_memory=load_data_to_memory,
         num_workers=32,
         shuffle=True,
     )
