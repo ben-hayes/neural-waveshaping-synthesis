@@ -1,4 +1,5 @@
-TimbreTransfer.filterbank_channels = 8
+TimbreTransfer.filterbank_channels = 12
+TimbreTransfer.filterbank_depth = 3
 TimbreTransfer.fir_taps = 64
 TimbreTransfer.tcn_channels = 16
 TimbreTransfer.tcn_depth = 5
@@ -7,6 +8,6 @@ TimbreTransfer.patience = 10
 TimbreTransfer.control_embedding_size = 16
 TimbreTransfer.learning_rate = 0.001
 
-NoiseSaturateFilter.filter_type = "dynamic"
+NoiseSaturateFilter.filter_type = "static"
 
-URMPDataModule.batch_size = 2
+URMPDataModule.batch_size = 16

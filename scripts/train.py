@@ -30,7 +30,11 @@ def main(gin_file, device, instrument, load_data_to_memory):
         logger=logger,
         callbacks=[lr_logger],
         gpus=device,
-        # val_check_interval=val_check_interval,
+        # val_check_interval=100,
+        # check_val_every_n_epoch=5,
+        max_epochs=5000,
+        # overfit_batches=1,
+        # gradient_clip_val=1.0,
     )
     trainer.fit(model, data)
 

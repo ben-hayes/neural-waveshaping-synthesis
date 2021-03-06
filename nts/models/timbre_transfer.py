@@ -18,8 +18,7 @@ class TimbreTransfer(pl.LightningModule):
         control_embedding_size: int = 16,
         filterbank_channels: int = 14,
         fir_taps: int = 128,
-        dynamic_filter: bool = True,
-        noise_channels: int = 1,
+        filterbank_depth: int = 3,
         tcn_channels: int = 24,
         tcn_kernel_size: int = 8,
         tcn_dilation: int = 8,
@@ -40,6 +39,8 @@ class TimbreTransfer(pl.LightningModule):
 
         self.sample_rate = sample_rate
 
+        self.filterbank_channels = filterbank_channels
+
         self.embedding = CausalTCN(
             2,
             control_embedding_size,
@@ -56,29 +57,12 @@ class TimbreTransfer(pl.LightningModule):
         self.noise_saturate_filter = nn.ModuleList(
             [
                 NoiseSaturateFilter(
-                    num_wavetables,
-                    filterbank_channels,
-                    fir_taps,
-                    noise_channels,
-                    control_embedding_size,
-                    dynamic_filter=dynamic_filter,
-                ),
-                NoiseSaturateFilter(
                     filterbank_channels,
                     filterbank_channels,
                     fir_taps,
-                    noise_channels,
                     control_embedding_size,
-                    dynamic_filter=dynamic_filter,
-                ),
-                NoiseSaturateFilter(
-                    filterbank_channels,
-                    filterbank_channels,
-                    fir_taps,
-                    noise_channels,
-                    control_embedding_size,
-                    dynamic_filter=dynamic_filter,
-                ),
+                )
+                for _ in range(filterbank_depth)
             ]
         )
 
@@ -90,9 +74,12 @@ class TimbreTransfer(pl.LightningModule):
             tcn_dilation,
             tcn_depth,
         )
+        # self.tcn = nn.Conv1d(filterbank_channels, 1, 1)
 
     def render_exciter(self, control):
         f0, amp = control[:, 0].unsqueeze(1), control[:, 1].unsqueeze(1)
+        amp = amp * 80 - 80
+        amp = 1000 * 10 ** (amp / 20)
         sig = self.wavetable(f0) * amp
 
         return sig
@@ -105,6 +92,7 @@ class TimbreTransfer(pl.LightningModule):
 
     def forward(self, control):
         x = self.render_exciter(control)
+        x = x.expand(-1, self.filterbank_channels, -1)
         control_embedding = self.get_embedding(control)
         for nsf in self.noise_saturate_filter:
             x = nsf(x, control_embedding)
@@ -118,7 +106,11 @@ class TimbreTransfer(pl.LightningModule):
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, factor=0.316228, patience=self.patience
         )
-        return {"optimizer": optimizer, "scheduler": scheduler, "monitor": "val/loss"}
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": scheduler,
+            "monitor": "val/loss",
+        }
 
     def _run_step(self, batch):
         audio = batch["audio"].float()

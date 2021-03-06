@@ -42,12 +42,13 @@ class Wavetable(nn.Module):
 
 
 class ParallelNoise(nn.Module):
-    def __init__(self, noise_channels: int = 1):
+    def __init__(self, noise_channels: int = 1, noise_type: str = 'gaussian'):
         super().__init__()
         self.noise_channels = noise_channels
+        self.noise_fn = torch.randn if noise_type == "gaussian" else torch.rand
 
     def forward(self, x: torch.Tensor):
-        noise = torch.rand(
+        noise = self.noise_fn(
             1,
             self.noise_channels,
             x.shape[-1],
@@ -57,3 +58,16 @@ class ParallelNoise(nn.Module):
         noise = noise * 2 - 1
         noise = noise
         return torch.cat((noise, x), dim=1)
+
+
+class AdditiveNoise(nn.Module):
+    def __init__(self, channels: int = 1, noise_type: str = 'gaussian', init_range: float = 0.1):
+        super().__init__()
+        self.channels = channels
+        self.noise_fn = torch.randn_like if noise_type == "gaussian" else torch.rand_like
+        self.scale = nn.Parameter(torch.randn(1, channels, 1) * init_range)
+        self.shift = nn.Parameter(torch.randn(1, channels, 1) * init_range)
+    
+    def forward(self, x: torch.Tensor):
+        noise = self.noise_fn(x) * self.scale + self.shift
+        return x + noise
