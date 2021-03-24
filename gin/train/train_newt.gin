@@ -1,0 +1,5 @@
+get_model.model = @TimbreTransferNEWT
+
+include 'gin/models/newt.gin'
+
+URMPDataModule.batch_size = 8

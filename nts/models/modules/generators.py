@@ -1,11 +1,14 @@
 import math
+from typing import Callable
 
 import gin
 import torch
+import torch.fft
 import torch.nn as nn
 import torch.nn.functional as F
 
 
+@gin.configurable
 class Wavetable(nn.Module):
     def __init__(
         self,
@@ -42,7 +45,7 @@ class Wavetable(nn.Module):
 
 
 class ParallelNoise(nn.Module):
-    def __init__(self, noise_channels: int = 1, noise_type: str = 'gaussian'):
+    def __init__(self, noise_channels: int = 1, noise_type: str = "gaussian"):
         super().__init__()
         self.noise_channels = noise_channels
         self.noise_fn = torch.randn if noise_type == "gaussian" else torch.rand
@@ -61,13 +64,43 @@ class ParallelNoise(nn.Module):
 
 
 class AdditiveNoise(nn.Module):
-    def __init__(self, channels: int = 1, noise_type: str = 'gaussian', init_range: float = 0.1):
+    def __init__(
+        self, channels: int = 1, noise_type: str = "gaussian", init_range: float = 0.1
+    ):
         super().__init__()
         self.channels = channels
-        self.noise_fn = torch.randn_like if noise_type == "gaussian" else torch.rand_like
+        self.noise_fn = (
+            torch.randn_like if noise_type == "gaussian" else torch.rand_like
+        )
         self.scale = nn.Parameter(torch.randn(1, channels, 1) * init_range)
         self.shift = nn.Parameter(torch.randn(1, channels, 1) * init_range)
-    
+
     def forward(self, x: torch.Tensor):
         noise = self.noise_fn(x) * self.scale + self.shift
         return x + noise
+
+
+class FIRNoiseSynth(nn.Module):
+    def __init__(
+        self, ir_length: int, hop_length: int, window_fn: Callable = torch.hann_window
+    ):
+        super().__init__()
+        self.ir_length = ir_length
+        self.hop_length = hop_length
+        self.register_buffer("window", window_fn(ir_length))
+
+    def forward(self, H_re):
+        H_im = torch.zeros_like(H_re)
+        H_z = torch.complex(H_re, H_im)
+
+        h = torch.fft.irfft(H_z.transpose(1, 2))
+        h = h.roll(self.ir_length // 2, -1)
+        h = h * self.window.view(1, 1, -1)
+        H = torch.fft.rfft(h)
+
+        noise = torch.rand(self.hop_length * H_re.shape[-1] - 1, device=H_re.device)
+        X = torch.stft(noise, self.ir_length, self.hop_length, return_complex=True)
+        X = X.unsqueeze(0)
+        Y = X * H.transpose(1, 2)
+        y = torch.istft(Y, self.ir_length, self.hop_length, center=False)
+        return y.unsqueeze(1)

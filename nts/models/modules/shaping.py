@@ -1,12 +1,13 @@
 import gin
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from .activations import MultiActivationBank
 from .dynamic import DynamicFFTConv1d, DynamicSincConv1d, FiLM, TimeDistributedMLP
 from .filters import SincConv1d
 from .generators import AdditiveNoise, ParallelNoise
-from .utils import CausalPad
+from .utils import CausalPad, LearnableUpsampler
 
 
 class Sine(nn.Module):
@@ -53,6 +54,7 @@ class NoiseSaturateFilter(nn.Module):
         if self.skip_connection:
             self.skip_scale = nn.Parameter(torch.randn(1, out_channels, 1))
 
+        self.upsample = LearnableUpsampler(256, 128, control_embedding_size)
         self.conditioning = nn.Conv1d(control_embedding_size, in_channels * 2, 1)
         self.noise = AdditiveNoise(in_channels, init_range=0.001)
         self.film1_size = in_channels
@@ -91,7 +93,8 @@ class NoiseSaturateFilter(nn.Module):
             raise ValueError("Filter type %s not known." % filter_type)
 
     def _get_conditioning(self, control_embedding):
-        conditioning = self.conditioning(control_embedding)
+        control = self.upsample(control_embedding)
+        conditioning = self.conditioning(control)
         gamma1 = conditioning[:, : self.film1_size]
         beta1 = conditioning[:, self.film1_size :]
         return gamma1, beta1
@@ -109,4 +112,45 @@ class NoiseSaturateFilter(nn.Module):
             y = self.filter(y)
 
         return x * self.skip_scale + y if self.skip_connection else y
-        
+
+
+@gin.configurable
+class NEWT(nn.Module):
+    def __init__(
+        self,
+        n_waveshapers: int,
+        control_embedding_size: int,
+        shaping_fn_size: int = 16,
+        filter_taps: int = 128,
+    ):
+        super().__init__()
+
+        self.n_waveshapers = n_waveshapers
+
+        self.mlp = TimeDistributedMLP(
+            control_embedding_size, control_embedding_size, n_waveshapers * 4
+        )
+
+        self.waveshaping_index = FiLM()
+        self.shaping_fn = TrainableNonlinearity(
+            n_waveshapers, shaping_fn_size, nonlinearity=Sine
+        )
+        self.normalising_coeff = FiLM()
+
+        self.filter_block = nn.Sequential(
+            CausalPad(filter_taps - 1),
+            nn.Conv1d(n_waveshapers, n_waveshapers, filter_taps),
+        )
+
+    def forward(self, exciter, control_embedding):
+        film_params = self.mlp(control_embedding)
+        film_params = F.upsample(film_params, exciter.shape[-1], mode="linear")
+        gamma_index, beta_index, gamma_norm, beta_norm = torch.split(
+            film_params, self.n_waveshapers, 1
+        )
+
+        x = self.waveshaping_index(exciter, gamma_index, beta_index)
+        x = self.shaping_fn(x)
+        x = self.normalising_coeff(x, gamma_norm, beta_norm)
+
+        return self.filter_block(x)

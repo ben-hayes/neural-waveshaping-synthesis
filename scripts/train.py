@@ -4,18 +4,25 @@ import pytorch_lightning as pl
 
 from nts.data.urmp import URMPDataModule
 from nts.models.timbre_transfer import TimbreTransfer
+from nts.models.timbre_transfer_newt import TimbreTransferNEWT
+
+
+@gin.configurable
+def get_model(model):
+    return model()
 
 
 @click.command()
 @click.option("--gin-file", prompt="Gin config file")
 @click.option("--device", default="cuda")
 @click.option("--instrument", default="vn")
-@click.option("--load-data-to-memory", default=True)
-def main(gin_file, device, instrument, load_data_to_memory):
+@click.option("--load-data-to-memory/--load-data-from-disk", default=True)
+@click.option("--with-wandb/--without-wandb", default=True)
+def main(gin_file, device, instrument, load_data_to_memory, with_wandb):
     gin.parse_config_file(gin_file)
-    model = TimbreTransfer(learning_rate=1e-3)
+    model = get_model()
     data = URMPDataModule(
-        "/import/c4dm-datasets/URMP/synth-dataset/4-second-segments",
+        "/import/c4dm-datasets/URMP/synth-dataset/4-second",
         instrument,
         load_to_memory=load_data_to_memory,
         num_workers=32,
@@ -36,6 +43,7 @@ def main(gin_file, device, instrument, load_data_to_memory):
         # overfit_batches=1,
         # gradient_clip_val=1.0,
     )
+
     trainer.fit(model, data)
 
 
