@@ -1,6 +1,6 @@
-# Neural Timbre Shaping: Real-Time Timbre Transfer in the Waveform Domain
+# Neural Waveshaping Synthesis: Real-Time Timbre Transfer in the Waveform Domain
 
-This repository is the official implementation of [Neural Timbre Shaping](#). 
+This repository is the official implementation of [Neural Waveshaping Synthesis](#). 
 
 
 
