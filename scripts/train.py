@@ -22,7 +22,7 @@ def main(gin_file, device, instrument, load_data_to_memory, with_wandb):
     gin.parse_config_file(gin_file)
     model = get_model()
     data = URMPDataModule(
-        "/import/c4dm-datasets/URMP/synth-dataset/4-second",
+        "/import/c4dm-datasets/URMP/synth-dataset/4-second-conf",
         instrument,
         load_to_memory=load_data_to_memory,
         num_workers=32,

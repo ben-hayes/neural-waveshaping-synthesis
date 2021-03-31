@@ -161,23 +161,42 @@ def preprocess_single_audio_file(
         hop_length_in_seconds,
     )
 
-    filtered_audio, filtered_f0, filtered_loudness, filtered_mfcc = filter_segments(
+    (
+        filtered_audio,
+        filtered_f0,
+        filtered_confidence,
+        filtered_loudness,
+        filtered_mfcc,
+    ) = filter_segments(
         confidence_threshold,
         segmented_confidence,
-        (segmented_audio, segmented_f0, segmented_loudness, segmented_mfcc),
+        (
+            segmented_audio,
+            segmented_f0,
+            segmented_confidence,
+            segmented_loudness,
+            segmented_mfcc,
+        ),
     )
 
     if filtered_audio.shape[-1] == 0:
         print("No segments exceeding confidence threshold...")
-        audio_split, f0_split, loudness_split, mfcc_split = [], [], [], []
+        audio_split, f0_split, confidence_split, loudness_split, mfcc_split = (
+            [],
+            [],
+            [],
+            [],
+            [],
+        )
     else:
         split = lambda x: [e.squeeze() for e in np.split(x, x.shape[-1], -1)]
         audio_split = split(filtered_audio)
         f0_split = split(filtered_f0)
+        confidence_split = split(filtered_confidence)
         loudness_split = split(filtered_loudness)
         mfcc_split = split(filtered_mfcc)
 
-    return audio_split, f0_split, loudness_split, mfcc_split
+    return audio_split, f0_split, confidence_split, loudness_split, mfcc_split
 
 
 @gin.configurable

@@ -24,7 +24,7 @@ class TrainableNonlinearity(nn.Module):
             nn.Conv1d(channels * width, channels * width, 1, groups=channels),
             nonlinearity(),
             nn.Conv1d(channels * width, channels, 1, groups=channels),
-            nn.Tanh(),
+            nonlinearity(),
         )
 
     def set_requires_grad(self, value: bool):

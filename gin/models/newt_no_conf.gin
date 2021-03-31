@@ -13,7 +13,7 @@ NEWT.control_embedding_size = %control_embedding_size
 NEWT.shaping_fn_size = 32
 NEWT.filter_taps = 64
 
-embedding/CausalTCN.in_channels = 3
+embedding/CausalTCN.in_channels = 2
 embedding/CausalTCN.hidden_channels = 16
 embedding/CausalTCN.out_channels = %control_embedding_size
 embedding/CausalTCN.kernel_size = 4

@@ -50,7 +50,7 @@ class TimbreTransferNEWT(pl.LightningModule):
 
     def render_exciter(self, control):
         f0, amp = control[:, 0].unsqueeze(1), control[:, 1].unsqueeze(1)
-        # sig = self.wavetable(f0) * amp
+        # sig = self.wavetable(f0) # * amp
 
         phase = torch.cumsum(math.tau * f0 / self.sample_rate, dim=-1)
         sig = torch.sin(phase)
@@ -58,7 +58,7 @@ class TimbreTransferNEWT(pl.LightningModule):
         return sig
 
     def get_embedding(self, control):
-        f0, other = control[:, 0:1], control[:, 1:2]
+        f0, other = control[:, 0:1], control[:, 1:3]
         f0 = f0 / 2000
         control = torch.cat((f0, other), dim=1)
         return self.embedding(control)

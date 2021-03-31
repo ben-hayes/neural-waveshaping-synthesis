@@ -80,12 +80,12 @@ def lazy_create_dataset(
     control_files = []
     audio_max = 1e-5
 
-    for i, (all_audio, all_f0, all_loudness, all_mfcc) in enumerate(
+    for i, (all_audio, all_f0, all_confidence, all_loudness, all_mfcc) in enumerate(
         preprocess_audio(files)
     ):
         file = os.path.split(files[i])[-1].replace(".wav", "")
-        for j, (audio, f0, loudness, mfcc) in enumerate(
-            zip(all_audio, all_f0, all_loudness, all_mfcc)
+        for j, (audio, f0, confidence, loudness, mfcc) in enumerate(
+            zip(all_audio, all_f0, all_confidence, all_loudness, all_mfcc)
         ):
             audio_file_name = "audio_%s_%d.npy" % (file, j)
             control_file_name = "control_%s_%d.npy" % (file, j)
@@ -98,7 +98,7 @@ def lazy_create_dataset(
                 os.path.join(output_directory, "temp", "audio", audio_file_name),
                 audio,
             )
-            control = np.stack((f0, loudness), axis=0)
+            control = np.stack((f0, loudness, confidence), axis=0)
             control = np.concatenate((control, mfcc), axis=0)
             np.save(
                 os.path.join(output_directory, "temp", "control", control_file_name),
