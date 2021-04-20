@@ -168,10 +168,11 @@ class NEWT(nn.Module):
         return self.mixer(x)
 
 
+@gin.configurable
 class Reverb(nn.Module):
-    def __init__(self, length_in_samples, sr):
+    def __init__(self, length_in_seconds, sr):
         super().__init__()
-        self.ir = nn.Parameter(torch.randn(1, length_in_samples - 1) * 1e-6)
+        self.ir = nn.Parameter(torch.randn(1, sr * length_in_seconds - 1) * 1e-6)
         self.register_buffer("initial_zero", torch.zeros(1, 1))
         # self.register_buffer("time", torch.arange(length_in_samples) / sr)
 

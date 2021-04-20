@@ -1,6 +1,7 @@
 import math
 from typing import Callable
 
+import gin
 import torch
 import torch.fft
 import torch.nn as nn
@@ -23,6 +24,7 @@ class TimeDistributedLayerNorm(nn.Module):
         return self.layer_norm(x.transpose(1, 2)).transpose(1, 2)
 
 
+@gin.configurable
 class TimeDistributedMLP(nn.Module):
     def __init__(self, in_size: int, hidden_size: int, out_size: int, depth: int = 3):
         super().__init__()

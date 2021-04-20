@@ -80,6 +80,7 @@ class AdditiveNoise(nn.Module):
         return x + noise
 
 
+@gin.configurable
 class FIRNoiseSynth(nn.Module):
     def __init__(
         self, ir_length: int, hop_length: int, window_fn: Callable = torch.hann_window

@@ -15,47 +15,52 @@ from .modules.shaping import NEWT, Reverb
 from .modules.tcn import CausalTCN
 from .modules.utils import LearnableUpsampler
 
+gin.external_configurable(nn.GRU, module="torch.nn")
+gin.external_configurable(nn.Conv1d, module="torch.nn")
+
+
+@gin.configurable
+class ControlModule(nn.Module):
+    def __init__(self, control_size: int, hidden_size: int, embedding_size: int):
+        super().__init__()
+        self.gru = nn.GRU(control_size, hidden_size, batch_first=True)
+        self.proj = nn.Conv1d(hidden_size, embedding_size, 1)
+    
+    def forward(self, x):
+        x, _ = self.gru(x.transpose(1, 2))
+        return self.proj(x.transpose(1, 2))
+
 
 @gin.configurable
 class TimbreTransferNEWT(pl.LightningModule):
     def __init__(
         self,
-        embedding_network,
-        post_network,
         n_waveshapers: int,
-        newts: int,
         control_hop: int,
         sample_rate: float = 16000,
-        target_shift: int = 0,
         learning_rate: float = 1e-3,
-        patience: int = 25,
+        lr_decay: float = 0.9,
     ):
         super().__init__()
         self.save_hyperparameters()
         self.learning_rate = learning_rate
-        self.patience = patience
-        self.target_shift = target_shift
+        self.lr_decay = lr_decay
         self.control_hop = control_hop
 
         self.sample_rate = sample_rate
 
-        # self.embedding = embedding_network()
-        self.embedding = nn.GRU(2, 128, batch_first=True)
-        self.embedding_proj = nn.Conv1d(128, 128, 1)
+        self.embedding = ControlModule()
 
-        # self.wavetable = Wavetable()
         self.osc = HarmonicOscillator()
         self.harmonic_mixer = nn.Conv1d(self.osc.n_harmonics, n_waveshapers, 1)
 
-        # self.newt = NEWT()
-        self.newts = nn.ModuleList([NEWT() for _ in range(newts)])
+        self.newt = NEWT()
 
-        self.h_generator = TimeDistributedMLP(128, 128, 129, 4)
-        self.noise_synth = FIRNoiseSynth(control_hop * 2, control_hop)
+        with gin.config_scope("noise_synth"):
+            self.h_generator = TimeDistributedMLP()
+            self.noise_synth = FIRNoiseSynth()
 
-        self.reverb = Reverb(sample_rate * 2, sample_rate)
-
-        # self.tcn = post_network()
+        self.reverb = Reverb()
 
     def render_exciter(self, f0):
         sig = self.osc(f0[:, 0])
@@ -64,31 +69,20 @@ class TimbreTransferNEWT(pl.LightningModule):
 
     def get_embedding(self, control):
         f0, other = control[:, 0:1], control[:, 1:2]
-        control = torch.cat((f0, other), dim=1).transpose(1, 2)
-        emb, _ = self.embedding(control)
-        emb = self.embedding_proj(emb.transpose(1, 2))
-        return emb
+        control = torch.cat((f0, other), dim=1)
+        return self.embedding(control)
 
     def forward(self, f0, control):
-        f0_upsampled = F.upsample(
-            f0, f0.shape[-1] * self.control_hop, mode="linear"
-        )
+        f0_upsampled = F.upsample(f0, f0.shape[-1] * self.control_hop, mode="linear")
         x = self.render_exciter(f0_upsampled)
 
         control_embedding = self.get_embedding(control)
-        embedding_upsampled = F.upsample(
-            control_embedding, control.shape[-1] * self.control_hop, mode="linear"
-        )
 
-        # x = self.newt(x, control_embedding)
-        for newt in self.newts:
-            x = newt(x, control_embedding)
-
+        x = self.newt(x, control_embedding)
 
         H = self.h_generator(control_embedding)
         noise = self.noise_synth(H)
 
-        # x = self.tcn(torch.cat((x, noise, embedding_upsampled), dim=1))
         x = torch.cat((x, noise), dim=1)
         x = x.sum(1)
 
@@ -100,7 +94,7 @@ class TimbreTransferNEWT(pl.LightningModule):
         self.stft_loss = auraloss.freq.MultiResolutionSTFTLoss()
 
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 25, 0.99)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 25, self.lr_decay)
         return {
             "optimizer": optimizer,
             "lr_scheduler": scheduler,
@@ -112,12 +106,8 @@ class TimbreTransferNEWT(pl.LightningModule):
         control = batch["control"].float()
 
         recon = self(f0, control)
-        recon_shifted = recon[:, self.target_shift :]
-        audio_shifted = (
-            audio[:, : -self.target_shift] if self.target_shift > 0 else audio
-        )
 
-        loss = self.stft_loss(recon_shifted, audio_shifted)
+        loss = self.stft_loss(recon, audio)
         return loss, recon, audio
 
     def _log_audio(self, name, audio):
