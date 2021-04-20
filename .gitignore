@@ -165,3 +165,8 @@ wandb
 wandb/*
 lightning_logs
 lightning_logs/*
+
+*.ipynb
+*.wav
+neural-timbre-shaping
+*.webm
