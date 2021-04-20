@@ -1,5 +1,6 @@
 from typing import Callable, Union
 
+import gin
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -38,6 +39,7 @@ class CausalTCNBlock(nn.Module):
         return self.net(x) + residual
 
 
+@gin.configurable
 class CausalTCN(nn.Module):
     def __init__(
         self,

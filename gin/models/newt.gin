@@ -1,0 +1,42 @@
+sample_rate = 16000
+
+control_embedding_size = 128
+n_waveshapers = 64
+
+Wavetable.wavetable_length = 256
+Wavetable.sample_rate = %sample_rate
+Wavetable.n_wavetables = 1
+Wavetable.initialisation = "sine"
+
+HarmonicOscillator.n_harmonics = 101
+HarmonicOscillator.sample_rate = %sample_rate
+
+NEWT.n_waveshapers = %n_waveshapers
+NEWT.control_embedding_size = %control_embedding_size
+NEWT.shaping_fn_size = 8
+NEWT.out_channels = 1
+TrainableNonlinearity.depth = 4
+
+embedding/CausalTCN.in_channels = 3
+embedding/CausalTCN.hidden_channels = %control_embedding_size
+embedding/CausalTCN.out_channels = %control_embedding_size
+embedding/CausalTCN.kernel_size = 8
+embedding/CausalTCN.dilation = 8
+embedding/CausalTCN.depth = 5
+TimbreTransferNEWT.embedding_network = @embedding/CausalTCN
+
+post/CausalTCN.in_channels = 48
+post/CausalTCN.hidden_channels = 16
+post/CausalTCN.out_channels = 1
+post/CausalTCN.kernel_size = 8
+post/CausalTCN.dilation = 8
+post/CausalTCN.depth = 5
+TimbreTransferNEWT.post_network = @post/CausalTCN
+
+TimbreTransferNEWT.newts = 1
+TimbreTransferNEWT.n_waveshapers = %n_waveshapers
+TimbreTransferNEWT.control_hop = 128
+TimbreTransferNEWT.sample_rate = %sample_rate
+TimbreTransferNEWT.patience = 25
+TimbreTransferNEWT.learning_rate = 0.001
+TimbreTransferNEWT.target_shift = 0
