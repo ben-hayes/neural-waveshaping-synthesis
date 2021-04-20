@@ -2,11 +2,7 @@ sample_rate = 16000
 
 control_embedding_size = 128
 n_waveshapers = 64
-
-Wavetable.wavetable_length = 256
-Wavetable.sample_rate = %sample_rate
-Wavetable.n_wavetables = 1
-Wavetable.initialisation = "sine"
+control_hop = 128
 
 HarmonicOscillator.n_harmonics = 101
 HarmonicOscillator.sample_rate = %sample_rate
@@ -17,26 +13,22 @@ NEWT.shaping_fn_size = 8
 NEWT.out_channels = 1
 TrainableNonlinearity.depth = 4
 
-embedding/CausalTCN.in_channels = 3
-embedding/CausalTCN.hidden_channels = %control_embedding_size
-embedding/CausalTCN.out_channels = %control_embedding_size
-embedding/CausalTCN.kernel_size = 8
-embedding/CausalTCN.dilation = 8
-embedding/CausalTCN.depth = 5
-TimbreTransferNEWT.embedding_network = @embedding/CausalTCN
+ControlModule.control_size = 2
+ControlModule.hidden_size = 128
+ControlModule.embedding_size = %control_embedding_size
 
-post/CausalTCN.in_channels = 48
-post/CausalTCN.hidden_channels = 16
-post/CausalTCN.out_channels = 1
-post/CausalTCN.kernel_size = 8
-post/CausalTCN.dilation = 8
-post/CausalTCN.depth = 5
-TimbreTransferNEWT.post_network = @post/CausalTCN
+noise_synth/TimeDistributedMLP.in_size = %control_embedding_size
+noise_synth/TimeDistributedMLP.hidden_size = %control_embedding_size
+noise_synth/TimeDistributedMLP.out_size = 129
+noise_synth/TimeDistributedMLP.depth = 4
+noise_synth/FIRNoiseSynth.ir_length = 256
+noise_synth/FIRNoiseSynth.hop_length = %control_hop
 
-TimbreTransferNEWT.newts = 1
+Reverb.length_in_seconds = 2
+Reverb.sr = %sample_rate
+
+
 TimbreTransferNEWT.n_waveshapers = %n_waveshapers
-TimbreTransferNEWT.control_hop = 128
+TimbreTransferNEWT.control_hop = %control_hop
 TimbreTransferNEWT.sample_rate = %sample_rate
-TimbreTransferNEWT.patience = 25
 TimbreTransferNEWT.learning_rate = 0.001
-TimbreTransferNEWT.target_shift = 0
