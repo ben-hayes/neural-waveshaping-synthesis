@@ -79,6 +79,11 @@ def lazy_create_dataset(
     audio_files = []
     control_files = []
     audio_max = 1e-5
+    means = []
+    stds = []
+    lengths = []
+    control_mean = 0
+    control_std = 1
 
     for i, (all_audio, all_f0, all_confidence, all_loudness, all_mfcc) in enumerate(
         preprocess_audio(files)
@@ -108,9 +113,24 @@ def lazy_create_dataset(
             audio_files.append(audio_file_name)
             control_files.append(control_file_name)
 
+            means.append(control.mean(axis=-1))
+            stds.append(control.std(axis=-1))
+            lengths.append(control.shape[-1])
+
     if len(audio_files) == 0:
         print("No datapoints to split. Skipping...")
         return
+
+    data_mean = np.mean(np.stack(means, axis=-1), axis=-1)[:, np.newaxis]
+    lengths = np.stack(lengths)[np.newaxis, :]
+    stds = np.stack(stds, axis=-1)
+    data_std = np.sqrt(np.sum(lengths * stds ** 2, axis=-1) / np.sum(lengths))[
+        :, np.newaxis
+    ]
+
+    print("Saving dataset stats...")
+    np.save(os.path.join(output_directory, "data_mean.npy"), data_mean)
+    np.save(os.path.join(output_directory, "data_std.npy"), data_std)
 
     splits = make_splits(audio_files, control_files, splits, split_proportions)
     for split in splits:
@@ -119,9 +139,12 @@ def lazy_create_dataset(
             audio = audio / audio_max
             np.save(os.path.join(output_directory, split, "audio", audio_file), audio)
         for control_file in splits[split]["control"]:
-            os.rename(
-                os.path.join(output_directory, "temp", "control", control_file),
-                os.path.join(output_directory, split, "control", control_file),
+            control = np.load(
+                os.path.join(output_directory, "temp", "control", control_file)
+            )
+            control = (control - data_mean) / data_std
+            np.save(
+                os.path.join(output_directory, split, "control", control_file), control
             )
 
 

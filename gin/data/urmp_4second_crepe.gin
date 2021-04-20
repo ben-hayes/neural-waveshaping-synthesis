@@ -8,10 +8,15 @@ extract_f0_with_crepe.full_model = True
 extract_f0_with_crepe.interpolate_fn = %interpolation
 extract_f0_with_crepe.hop_length = %control_hop
 
-extract_rms.sample_rate = %sample_rate
-extract_rms.interpolate_fn = %interpolation
-extract_rms.window_size = 1024
-extract_rms.hop_length = %control_hop
+#extract_rms.sample_rate = %sample_rate
+#extract_rms.interpolate_fn = %interpolation
+#extract_rms.window_size = 1024
+#extract_rms.hop_length = %control_hop
+
+extract_perceptual_loudness.sample_rate = %sample_rate
+extract_perceptual_loudness.interpolate_fn = %interpolation
+extract_perceptual_loudness.n_fft = 1024
+extract_perceptual_loudness.hop_length = %control_hop
 
 extract_mfcc.sample_rate = %sample_rate
 extract_mfcc.n_fft = 1024
@@ -20,7 +25,7 @@ extract_mfcc.n_mfcc = 16
 
 preprocess_audio.target_sr = %sample_rate
 preprocess_audio.f0_extractor = @extract_f0_with_crepe
-preprocess_audio.loudness_extractor = @extract_rms
+preprocess_audio.loudness_extractor = @extract_perceptual_loudness
 preprocess_audio.segment_length_in_seconds = 4
 preprocess_audio.hop_length_in_seconds = 1
 preprocess_audio.normalise_audio = True

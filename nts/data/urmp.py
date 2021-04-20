@@ -9,6 +9,7 @@ import torch
 class URMPDataset(torch.utils.data.Dataset):
     def __init__(self, path: str, split: str = "train", load_to_memory: bool = True):
         super().__init__()
+        # split = "train"
         self.load_to_memory = load_to_memory
 
         self.split_path = os.path.join(path, split)
@@ -27,10 +28,14 @@ class URMPDataset(torch.utils.data.Dataset):
                 for name in self.data_list
             ]
 
+        self.data_mean = np.load(os.path.join(path, "data_mean.npy"))
+        self.data_std = np.load(os.path.join(path, "data_std.npy"))
+
     def __len__(self):
         return len(self.data_list)
 
     def __getitem__(self, idx):
+        # idx = 10
         if self.load_to_memory:
             audio = self.audio[idx]
             control = self.control[idx]
@@ -41,8 +46,14 @@ class URMPDataset(torch.utils.data.Dataset):
 
             audio = np.load(os.path.join(self.split_path, "audio", audio_name))
             control = np.load(os.path.join(self.split_path, "control", control_name))
+        denormalised_control = (control * self.data_std) + self.data_mean
 
-        return {"audio": audio, "control": control}
+        return {
+            "audio": audio,
+            "f0": denormalised_control[0:1, :],
+            "amp": denormalised_control[1:2, :],
+            "control": control,
+        }
 
 
 @gin.configurable

@@ -14,6 +14,15 @@ class FiLM(nn.Module):
         return gamma * x + beta
 
 
+class TimeDistributedLayerNorm(nn.Module):
+    def __init__(self, size: int):
+        super().__init__()
+        self.layer_norm = nn.LayerNorm(size)
+    
+    def forward(self, x):
+        return self.layer_norm(x.transpose(1, 2)).transpose(1, 2)
+
+
 class TimeDistributedMLP(nn.Module):
     def __init__(self, in_size: int, hidden_size: int, out_size: int, depth: int = 3):
         super().__init__()
@@ -28,7 +37,8 @@ class TimeDistributedMLP(nn.Module):
                 )
             )
             if i < depth - 1:
-                layers.append(nn.ReLU())
+                layers.append(TimeDistributedLayerNorm(hidden_size))
+                layers.append(nn.LeakyReLU())
         self.net = nn.Sequential(*layers)
 
     def forward(self, x):

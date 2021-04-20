@@ -1,5 +1,8 @@
+import math
+
 import gin
 import torch
+import torch.fft
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -15,26 +18,35 @@ class Sine(nn.Module):
         return torch.sin(x)
 
 
+@gin.configurable
 class TrainableNonlinearity(nn.Module):
-    def __init__(self, channels, width, nonlinearity=nn.ELU):
+    def __init__(
+        self, channels, width, nonlinearity=nn.ReLU, final_nonlinearity=Sine, depth=3
+    ):
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Conv1d(channels, channels * width, 1, groups=channels),
-            nonlinearity(),
-            nn.Conv1d(channels * width, channels * width, 1, groups=channels),
-            nonlinearity(),
-            nn.Conv1d(channels * width, channels, 1, groups=channels),
-            nonlinearity(),
-        )
+        self.input_scale = nn.Parameter(torch.randn(1, channels, 1) * 10)
+        layers = []
+        for i in range(depth):
+            layers.append(
+                nn.Conv1d(
+                    channels if i == 0 else channels * width,
+                    channels * width if i < depth - 1 else channels,
+                    1,
+                    groups=channels,
+                )
+            )
+            layers.append(nonlinearity() if i < depth - 1 else final_nonlinearity())
 
-    def set_requires_grad(self, value: bool):
-        for layer in self.net:
-            if type(layer) != nn.Tanh:
-                for p in layer.parameters():
-                    p.requires_grad = value
+        self.net = nn.Sequential(*layers)
+
+    # def set_requires_grad(self, value: bool):
+    #     for layer in self.net:
+    #         if type(layer) != nn.Tanh:
+    #             for p in layer.parameters():
+    #                 p.requires_grad = value
 
     def forward(self, x):
-        return self.net(x)
+        return self.net(self.input_scale * x)
 
 
 @gin.configurable
@@ -121,14 +133,14 @@ class NEWT(nn.Module):
         n_waveshapers: int,
         control_embedding_size: int,
         shaping_fn_size: int = 16,
-        filter_taps: int = 128,
+        out_channels: int = 1,
     ):
         super().__init__()
 
         self.n_waveshapers = n_waveshapers
 
         self.mlp = TimeDistributedMLP(
-            control_embedding_size, control_embedding_size, n_waveshapers * 4
+            control_embedding_size, control_embedding_size, n_waveshapers * 4, depth=4
         )
 
         self.waveshaping_index = FiLM()
@@ -137,9 +149,8 @@ class NEWT(nn.Module):
         )
         self.normalising_coeff = FiLM()
 
-        self.filter_block = nn.Sequential(
-            CausalPad(filter_taps - 1),
-            nn.Conv1d(n_waveshapers, n_waveshapers, filter_taps),
+        self.mixer = nn.Sequential(
+            nn.Conv1d(n_waveshapers, out_channels, 1),
         )
 
     def forward(self, exciter, control_embedding):
@@ -153,4 +164,25 @@ class NEWT(nn.Module):
         x = self.shaping_fn(x)
         x = self.normalising_coeff(x, gamma_norm, beta_norm)
 
-        return self.filter_block(x)
+        # return x
+        return self.mixer(x)
+
+
+class Reverb(nn.Module):
+    def __init__(self, length_in_samples, sr):
+        super().__init__()
+        self.ir = nn.Parameter(torch.randn(1, length_in_samples - 1) * 1e-6)
+        self.register_buffer("initial_zero", torch.zeros(1, 1))
+        # self.register_buffer("time", torch.arange(length_in_samples) / sr)
+
+    def forward(self, x):
+        ir_ = torch.cat((self.initial_zero, self.ir), dim=-1)  # * torch.exp(-self.time * torch.exp(-self.decay))
+        if x.shape[-1] > ir_.shape[-1]:
+            ir_ = F.pad(ir_, (0, x.shape[-1] - ir_.shape[-1]))
+            x_ = x
+        else:
+            x_ = F.pad(x, (0, ir_.shape[-1] - x.shape[-1]))
+        # return (1 - self.wet) * x + self.wet * torch.fft.irfft(
+        #     torch.fft.rfft(x_) * torch.fft.rfft(ir_)
+        # )
+        return x + torch.fft.irfft(torch.fft.rfft(x_) * torch.fft.rfft(ir_))

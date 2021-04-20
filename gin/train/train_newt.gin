@@ -2,4 +2,6 @@ get_model.model = @TimbreTransferNEWT
 
 include 'gin/models/newt.gin'
 
-URMPDataModule.batch_size = 8
+URMPDataModule.batch_size = 4
+early_stopping.patience = 50
+gradient_clipping.norm = 1.0
