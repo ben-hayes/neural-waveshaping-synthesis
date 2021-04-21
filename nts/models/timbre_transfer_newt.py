@@ -25,7 +25,7 @@ class ControlModule(nn.Module):
         super().__init__()
         self.gru = nn.GRU(control_size, hidden_size, batch_first=True)
         self.proj = nn.Conv1d(hidden_size, embedding_size, 1)
-    
+
     def forward(self, x):
         x, _ = self.gru(x.transpose(1, 2))
         return self.proj(x.transpose(1, 2))
@@ -40,11 +40,13 @@ class TimbreTransferNEWT(pl.LightningModule):
         sample_rate: float = 16000,
         learning_rate: float = 1e-3,
         lr_decay: float = 0.9,
+        lr_decay_interval: int = 10000,
     ):
         super().__init__()
         self.save_hyperparameters()
         self.learning_rate = learning_rate
         self.lr_decay = lr_decay
+        self.lr_decay_interval = lr_decay_interval
         self.control_hop = control_hop
 
         self.sample_rate = sample_rate
@@ -94,10 +96,12 @@ class TimbreTransferNEWT(pl.LightningModule):
         self.stft_loss = auraloss.freq.MultiResolutionSTFTLoss()
 
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 25, self.lr_decay)
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer, self.lr_decay_interval, self.lr_decay
+        )
         return {
             "optimizer": optimizer,
-            "lr_scheduler": scheduler,
+            "lr_scheduler": {"scheduler": scheduler, "interval": "step"},
         }
 
     def _run_step(self, batch):

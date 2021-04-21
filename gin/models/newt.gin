@@ -31,4 +31,3 @@ Reverb.sr = %sample_rate
 TimbreTransferNEWT.n_waveshapers = %n_waveshapers
 TimbreTransferNEWT.control_hop = %control_hop
 TimbreTransferNEWT.sample_rate = %sample_rate
-TimbreTransferNEWT.learning_rate = 0.001
