@@ -49,7 +49,6 @@ def main(
         callbacks=[lr_logger, checkpointing],
         gpus=device,
         resume_from_checkpoint=restore_checkpoint if restore_checkpoint != "" else None,
-        profiler=profiler,
         **kwargs,
     )
     trainer.fit(model, data)
