@@ -4,10 +4,10 @@ from typing import Union
 import gin
 import numpy as np
 import pytorch_lightning as pl
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import LabelEncoder
 import torch
 import torch.nn.functional as F
-from torchaudio.transforms import MelSpectrogram
+from torchaudio.transforms import MelSpectrogram, MFCC
 
 from nts.utils import unzip
 
@@ -32,10 +32,13 @@ class URMPClassificationDataset(torch.utils.data.Dataset):
             for f in os.listdir(path)
         ]
         self.files, instruments = unzip(file_list)
-        enc = OneHotEncoder(sparse=False)
-        self.labels = enc.fit_transform(np.array(instruments)[:, np.newaxis])
+        enc = LabelEncoder()
+        self.labels = enc.fit_transform(instruments)
 
-        self.mel_spectrogram = MelSpectrogram(sample_rate, n_fft=1024, hop_length=256)
+        # self.mel_spectrogram = MelSpectrogram(
+        #     sample_rate, n_fft=1024, hop_length=256, normalized=True
+        # )
+        self.mfcc = MFCC(sample_rate)
 
     def __len__(self):
         return len(self.files)
@@ -43,10 +46,10 @@ class URMPClassificationDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         audio = np.load(self.files[idx])
         audio = torch.tensor(audio)
-        print(audio.shape)
         label = self.labels[idx]
 
-        spectrogram = self.mel_spectrogram(audio)
+        # spectrogram = self.mel_spectrogram(audio)
+        spectrogram = self.mfcc(audio)
 
         return {
             "label": label,
@@ -54,6 +57,7 @@ class URMPClassificationDataset(torch.utils.data.Dataset):
         }
 
 
+@gin.configurable
 class URMPClassificationDataModule(pl.LightningDataModule):
     def __init__(
         self,
@@ -68,16 +72,23 @@ class URMPClassificationDataModule(pl.LightningDataModule):
         self.instruments = instruments
         self.batch_size = batch_size
         self.dataloader_args = dataloader_args
-    
+        self.sample_rate = sample_rate
+
     def prepare_data(self):
         pass
 
     def setup(self, stage: str = None):
         if stage == "fit":
-            self.train = URMPClassificationDataset(self.urmp_root, self.instruments, "train", sample_rate=self.sample_rate)
-            self.val = URMPClassificationDataset(self.urmp_root, self.instruments, "val", sample_rate=self.sample_rate)
+            self.train = URMPClassificationDataset(
+                self.urmp_root, self.instruments, "train", sample_rate=self.sample_rate
+            )
+            self.val = URMPClassificationDataset(
+                self.urmp_root, self.instruments, "val", sample_rate=self.sample_rate
+            )
         elif stage == "test" or stage is None:
-            self.test = URMPClassificationDataset(self.urmp_root, self.instruments, "test", sample_rate=self.sample_rate)
+            self.test = URMPClassificationDataset(
+                self.urmp_root, self.instruments, "test", sample_rate=self.sample_rate
+            )
 
     def _make_dataloader(self, dataset):
         return torch.utils.data.DataLoader(
@@ -92,5 +103,3 @@ class URMPClassificationDataModule(pl.LightningDataModule):
 
     def test_dataloader(self):
         return self._make_dataloader(self.test)
-
-

@@ -1,0 +1,12 @@
+include 'gin/models/inception_urmp.gin'
+
+URMPClassificationDataModule.sample_rate = 16000
+URMPClassificationDataModule.instruments = ["vn", "fl", "tpt"]
+URMPClassificationDataModule.batch_size = 50
+URMPClassificationDataModule.urmp_root = "/import/c4dm-datasets/URMP/synth-dataset/4s-dataset"
+URMPClassificationDataModule.num_workers = 16
+
+InceptionInstrumentClassifier.learning_rate = 0.001
+
+trainer_kwargs.max_epochs = 50
+trainer_kwargs.gradient_clip_val = 1.0

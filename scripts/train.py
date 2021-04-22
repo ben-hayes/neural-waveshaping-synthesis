@@ -38,10 +38,10 @@ def main(
     )
 
     lr_logger = pl.callbacks.LearningRateMonitor(logging_interval="epoch")
-    logger = pl.loggers.WandbLogger(project="neural-timbre-shaping", log_model=True)
+    logger = pl.loggers.WandbLogger(project="neural-timbre-shaping")
     logger.watch(model, log="parameters")
 
-    checkpointing = pl.callbacks.ModelCheckpoint(monitor="val/loss", save_top_k=5)
+    checkpointing = pl.callbacks.ModelCheckpoint(monitor="val/loss", save_top_k=1)
 
     kwargs = trainer_kwargs()
     trainer = pl.Trainer(
