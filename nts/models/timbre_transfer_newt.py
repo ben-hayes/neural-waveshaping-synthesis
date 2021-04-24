@@ -151,3 +151,18 @@ class TimbreTransferNEWT(pl.LightningModule):
             self._log_audio("original", audio[0].detach().cpu().squeeze())
             self._log_audio("recon", recon[0].detach().cpu().squeeze())
         return loss
+    
+    def test_step(self, batch, batch_idx):
+        loss, recon, audio = self._run_step(batch)
+        self.log(
+            "test/loss",
+            loss.item(),
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+            sync_dist=True,
+        )
+        if batch_idx == 0:
+            self._log_audio("original", audio[0].detach().cpu().squeeze())
+            self._log_audio("recon", recon[0].detach().cpu().squeeze())
