@@ -8,6 +8,6 @@ TimbreTransferNEWT.learning_rate = 0.001
 TimbreTransferNEWT.lr_decay = 0.9
 TimbreTransferNEWT.lr_decay_interval = 10000
 
-trainer_kwargs.max_steps = 150000
-trainer_kwargs.gradient_clip_val = 1.0
+trainer_kwargs.max_steps = 120000
+trainer_kwargs.gradient_clip_val = 2.0
 trainer_kwargs.accelerator = 'dp'

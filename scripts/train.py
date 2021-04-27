@@ -41,7 +41,9 @@ def main(
     logger = pl.loggers.WandbLogger(project="neural-timbre-shaping")
     logger.watch(model, log="parameters")
 
-    checkpointing = pl.callbacks.ModelCheckpoint(monitor="val/loss", save_top_k=1)
+    checkpointing = pl.callbacks.ModelCheckpoint(
+        monitor="val/loss", save_top_k=1, save_last=True
+    )
 
     kwargs = trainer_kwargs()
     trainer = pl.Trainer(
