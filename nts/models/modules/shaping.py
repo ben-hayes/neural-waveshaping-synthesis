@@ -177,7 +177,9 @@ class Reverb(nn.Module):
         # self.register_buffer("time", torch.arange(length_in_samples) / sr)
 
     def forward(self, x):
-        ir_ = torch.cat((self.initial_zero, self.ir), dim=-1)  # * torch.exp(-self.time * torch.exp(-self.decay))
+        ir_ = torch.cat(
+            (self.initial_zero, self.ir), dim=-1
+        )  # * torch.exp(-self.time * torch.exp(-self.decay))
         if x.shape[-1] > ir_.shape[-1]:
             ir_ = F.pad(ir_, (0, x.shape[-1] - ir_.shape[-1]))
             x_ = x
@@ -186,4 +188,9 @@ class Reverb(nn.Module):
         # return (1 - self.wet) * x + self.wet * torch.fft.irfft(
         #     torch.fft.rfft(x_) * torch.fft.rfft(ir_)
         # )
-        return x + torch.fft.irfft(torch.fft.rfft(x_) * torch.fft.rfft(ir_))
+        return (
+            x
+            + torch.fft.irfft(torch.fft.rfft(x_) * torch.fft.rfft(ir_))[
+                ..., : x.shape[-1]
+            ]
+        )
