@@ -8,6 +8,7 @@ import torch
 from tqdm import trange
 
 from nts.models.timbre_transfer_newt import TimbreTransferNEWT
+from nts.models.modules.shaping import FastNEWT
 
 
 @click.command()
@@ -18,8 +19,9 @@ from nts.models.timbre_transfer_newt import TimbreTransferNEWT
 @click.option("--length-in-seconds", default=4)
 @click.option("--sample-rate", default=16000)
 @click.option("--control-hop", default=128)
+@click.option("--use-fast-newt", is_flag=True)
 def main(
-    gin_file, num_iters, batch_size, device, length_in_seconds, sample_rate, control_hop
+    gin_file, num_iters, batch_size, device, length_in_seconds, sample_rate, control_hop, use_fast_newt
 ):
     gin.parse_config_file(gin_file)
     dummy_control = torch.rand(
@@ -36,8 +38,11 @@ def main(
         device=device,
         requires_grad=False,
     )
-    model = TimbreTransferNEWT().to(device)
+    model = TimbreTransferNEWT()
+    if use_fast_newt:
+        model.newt = FastNEWT(model.newt)
     model.eval()
+    model = model.to(device)
 
     times = []
     with torch.no_grad():

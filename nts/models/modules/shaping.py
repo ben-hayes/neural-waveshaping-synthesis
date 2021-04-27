@@ -168,6 +168,77 @@ class NEWT(nn.Module):
         return self.mixer(x)
 
 
+class FastNEWT(NEWT):
+    def __init__(
+        self,
+        newt: NEWT,
+        table_size: int = 4096,
+        table_min: float = -3.0,
+        table_max: float = 3.0,
+    ):
+        super().__init__()
+        self.table_size = table_size
+        self.table_min = table_min
+        self.table_max = table_max
+
+        self.n_waveshapers = newt.n_waveshapers
+        self.mlp = newt.mlp
+
+        self.waveshaping_index = newt.waveshaping_index
+        self.normalising_coeff = newt.normalising_coeff
+        self.mixer = newt.mixer
+
+        self.lookup_table = self._init_lookup_table(
+            newt, table_size, self.n_waveshapers, table_min, table_max
+        )
+
+    def _init_lookup_table(
+        self,
+        newt: NEWT,
+        table_size: int,
+        n_waveshapers: int,
+        table_min: float,
+        table_max: float,
+    ):
+        sample_values = torch.linspace(table_min, table_max, table_size).expand(
+            1, n_waveshapers, table_size
+        )
+        lookup_table = newt.shaping_fn(sample_values)[0]
+        return nn.Parameter(lookup_table)
+
+    def _lookup(self, idx):
+        return torch.stack(
+            [
+                torch.stack(
+                    [
+                        self.lookup_table[shaper, idx[batch, shaper]]
+                        for shaper in range(idx.shape[1])
+                    ],
+                    dim=0,
+                )
+                for batch in range(idx.shape[0])
+            ],
+            dim=0,
+        )
+
+    def shaping_fn(self, x):
+        idx = self.table_size * (x - self.table_min) / (self.table_max - self.table_min)
+
+        lower = torch.floor(idx).long()
+        lower[lower < 0] = 0
+        lower[lower >= self.table_size] = self.table_size - 1
+
+        upper = lower + 1
+        upper[upper >= self.table_size] = self.table_size - 1
+
+        fract = idx - lower
+        lower_v = self._lookup(lower)
+        upper_v = self._lookup(upper)
+
+        output = (upper_v - lower_v) * fract + lower_v
+        return output
+
+
 @gin.configurable
 class Reverb(nn.Module):
     def __init__(self, length_in_seconds, sr):
