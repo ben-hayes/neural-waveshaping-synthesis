@@ -8,6 +8,7 @@ import torch
 from tqdm import trange
 
 from nts.models.timbre_transfer_newt import TimbreTransferNEWT
+from nts.models.modules.shaping import FastNEWT
 
 BUFFER_SIZES = [256, 512, 1024, 2048, 4096, 8192, 16384, 32768]
 
@@ -18,6 +19,8 @@ BUFFER_SIZES = [256, 512, 1024, 2048, 4096, 8192, 16384, 32768]
 @click.option("--batch-size", default=1)
 @click.option("--device", default="cpu")
 @click.option("--length-in-seconds", default=4)
+@click.option("--use-fast-newt", is_flag=True)
+@click.option("--model-name", default="ours")
 def main(
     gin_file,
     output_file,
@@ -25,11 +28,15 @@ def main(
     batch_size,
     device,
     length_in_seconds,
-    model_name="Ours",
+    use_fast_newt,
+    model_name,
 ):
     gin.parse_config_file(gin_file)
-    model = TimbreTransferNEWT().to(device)
+    model = TimbreTransferNEWT()
+    if use_fast_newt:
+        model.newt = FastNEWT(model.newt)
     model.eval()
+    model = model.to(device)
 
     # eliminate any lazy init costs
     with torch.no_grad():
