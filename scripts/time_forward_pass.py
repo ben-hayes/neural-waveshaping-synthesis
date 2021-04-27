@@ -3,6 +3,7 @@ import time
 import click
 import gin
 import numpy as np
+from scipy.stats import describe
 import torch
 from tqdm import trange
 
@@ -46,7 +47,10 @@ def main(
             time_elapsed = time.time() - start_time
             times.append(time_elapsed)
 
-    print(np.mean(times) / length_in_seconds)
+    print(describe(times))
+    rtfs = np.array(times) / length_in_seconds
+    print("Mean RTF: %.4f" % np.mean(rtfs))
+    print("90th percentile RTF: %.4f" % np.percentile(rtfs, 90))
 
 
 if __name__ == "__main__":
