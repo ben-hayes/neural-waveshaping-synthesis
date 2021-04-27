@@ -36,11 +36,11 @@ class URMPDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         # idx = 10
+        name = self.data_list[idx]
         if self.load_to_memory:
             audio = self.audio[idx]
             control = self.control[idx]
         else:
-            name = self.data_list[idx]
             audio_name = "audio_%s" % name
             control_name = "control_%s" % name
 
@@ -53,6 +53,7 @@ class URMPDataset(torch.utils.data.Dataset):
             "f0": denormalised_control[0:1, :],
             "amp": denormalised_control[1:2, :],
             "control": control,
+            "name": os.path.splitext(os.path.basename(name))[0],
         }
 
 

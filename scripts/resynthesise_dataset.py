@@ -8,11 +8,7 @@ import torch
 
 from nts.data.urmp import URMPDataset
 from nts.models.timbre_transfer_newt import TimbreTransferNEWT
-
-
-def make_dir_if_not_exists(path):
-    if not os.path.exists(path):
-        os.makedirs(path, exist_ok=True)
+from nts.utils import make_dir_if_not_exists
 
 
 @click.command()
@@ -54,11 +50,21 @@ def main(
             control = batch["control"].float().to(device)
             output = model(f0, control)
 
-        audio = output.cpu().numpy()
-        for j in range(audio.shape[0]):
-            file_name = "output_%d.wav" % (i * batch_size + j)
+        target_audio = batch["audio"].float().numpy()
+        output_audio = output.cpu().numpy()
+        for j in range(output_audio.shape[0]):
+            name = batch["name"][j]
+            target_name = "%s.target.wav" % name
+            output_name = "%s.output.wav" % name
             wavfile.write(
-                os.path.join(output_path, file_name), model.sample_rate, audio[j]
+                os.path.join(output_path, target_name),
+                model.sample_rate,
+                target_audio[j],
+            )
+            wavfile.write(
+                os.path.join(output_path, output_name),
+                model.sample_rate,
+                output_audio[j],
             )
 
 

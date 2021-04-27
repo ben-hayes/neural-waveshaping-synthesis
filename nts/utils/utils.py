@@ -1,3 +1,4 @@
+import os
 from typing import Callable, Sequence
 
 
@@ -15,3 +16,8 @@ def apply_unpack(fn: Callable[[any], any], x: Sequence[Sequence[any]]):
 
 def unzip(x: Sequence[any]):
     return list(zip(*x))
+
+
+def make_dir_if_not_exists(path):
+    if not os.path.exists(path):
+        os.makedirs(path, exist_ok=True)
