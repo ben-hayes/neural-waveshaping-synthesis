@@ -1,8 +1,10 @@
+auraloss==0.2.1
 black==20.8b1
 click==7.1.2
 gin-config==0.4.0
 librosa==0.8.0
 numpy==1.20.1
+pytorch_lightning==1.2.10
 resampy==0.2.2
 scipy==1.6.1
 torch==1.7.1

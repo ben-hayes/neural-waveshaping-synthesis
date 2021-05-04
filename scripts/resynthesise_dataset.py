@@ -6,10 +6,10 @@ from scipy.io import wavfile
 from tqdm import tqdm
 import torch
 
-from nts.data.urmp import URMPDataset
-from nts.models.modules.shaping import FastNEWT
-from nts.models.timbre_transfer_newt import TimbreTransferNEWT
-from nts.utils import make_dir_if_not_exists
+from neural_waveshaping_synthesis.data.urmp import URMPDataset
+from neural_waveshaping_synthesis.models.modules.shaping import FastNEWT
+from neural_waveshaping_synthesis.models.neural_waveshaping import NeuralWaveshaping
+from neural_waveshaping_synthesis.utils import make_dir_if_not_exists
 
 
 @click.command()
@@ -44,7 +44,7 @@ def main(
     )
 
     device = torch.device(device)
-    model = TimbreTransferNEWT.load_from_checkpoint(model_checkpoint)
+    model = NeuralWaveshaping.load_from_checkpoint(model_checkpoint)
     model.eval()
 
     if use_fastnewt:

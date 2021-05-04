@@ -32,7 +32,7 @@ class ControlModule(nn.Module):
 
 
 @gin.configurable
-class TimbreTransferNEWT(pl.LightningModule):
+class NeuralWaveshaping(pl.LightningModule):
     def __init__(
         self,
         n_waveshapers: int,
@@ -41,6 +41,7 @@ class TimbreTransferNEWT(pl.LightningModule):
         learning_rate: float = 1e-3,
         lr_decay: float = 0.9,
         lr_decay_interval: int = 10000,
+        log_audio: bool = False,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -48,6 +49,7 @@ class TimbreTransferNEWT(pl.LightningModule):
         self.lr_decay = lr_decay
         self.lr_decay_interval = lr_decay_interval
         self.control_hop = control_hop
+        self.log_audio = log_audio
 
         self.sample_rate = sample_rate
 
@@ -147,7 +149,7 @@ class TimbreTransferNEWT(pl.LightningModule):
             logger=True,
             sync_dist=True,
         )
-        if batch_idx == 0:
+        if batch_idx == 0 and self.log_audio:
             self._log_audio("original", audio[0].detach().cpu().squeeze())
             self._log_audio("recon", recon[0].detach().cpu().squeeze())
         return loss

@@ -9,7 +9,7 @@ import torch
 import torch.nn.functional as F
 from torchaudio.transforms import MelSpectrogram, MFCC
 
-from nts.utils import unzip
+from neural_waveshaping_synthesis.utils import unzip
 
 
 class URMPClassificationDataset(torch.utils.data.Dataset):

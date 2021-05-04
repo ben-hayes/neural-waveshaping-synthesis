@@ -19,7 +19,7 @@ embedding/CausalTCN.out_channels = %control_embedding_size
 embedding/CausalTCN.kernel_size = 4
 embedding/CausalTCN.dilation = 4
 embedding/CausalTCN.depth = 4
-TimbreTransferNEWT.embedding_network = @embedding/CausalTCN
+NeuralWaveshaping.embedding_network = @embedding/CausalTCN
 
 post/CausalTCN.in_channels = 49
 post/CausalTCN.hidden_channels = 16
@@ -27,10 +27,10 @@ post/CausalTCN.out_channels = 1
 post/CausalTCN.kernel_size = 8
 post/CausalTCN.dilation = 8
 post/CausalTCN.depth = 5
-TimbreTransferNEWT.post_network = @post/CausalTCN
+NeuralWaveshaping.post_network = @post/CausalTCN
 
-TimbreTransferNEWT.control_hop = 128
-TimbreTransferNEWT.sample_rate = %sample_rate
-TimbreTransferNEWT.patience = 25
-TimbreTransferNEWT.learning_rate = 0.001
-TimbreTransferNEWT.target_shift = 256
+NeuralWaveshaping.control_hop = 128
+NeuralWaveshaping.sample_rate = %sample_rate
+NeuralWaveshaping.patience = 25
+NeuralWaveshaping.learning_rate = 0.001
+NeuralWaveshaping.target_shift = 256

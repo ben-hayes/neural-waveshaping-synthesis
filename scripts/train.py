@@ -2,14 +2,14 @@ import click
 import gin
 import pytorch_lightning as pl
 
-from nts.data.urmp import URMPDataModule
-from nts.models.timbre_transfer import TimbreTransfer
-from nts.models.timbre_transfer_newt import TimbreTransferNEWT
+from neural_waveshaping_synthesis.data.general import GeneralDataModule
+from neural_waveshaping_synthesis.data.urmp import URMPDataModule
+from neural_waveshaping_synthesis.models.neural_waveshaping import NeuralWaveshaping
 
 
 @gin.configurable
-def get_model(model):
-    return model()
+def get_model(model, with_wandb):
+    return model(log_audio=with_wandb)
 
 
 @gin.configurable
@@ -19,39 +19,60 @@ def trainer_kwargs(**kwargs):
 
 @click.command()
 @click.option("--gin-file", prompt="Gin config file")
-@click.option("--device", default="cuda")
+@click.option("--dataset-path", prompt="Dataset root")
+@click.option("--urmp", is_flag=True)
+@click.option("--device", default="0")
 @click.option("--instrument", default="vn")
-@click.option("--load-data-to-memory/--load-data-from-disk", default=True)
-@click.option("--with-wandb/--without-wandb", default=True)
+@click.option("--load-data-to-memory", is_flag=True)
+@click.option("--with-wandb", is_flag=True)
 @click.option("--restore-checkpoint", default="")
 def main(
-    gin_file, device, instrument, load_data_to_memory, with_wandb, restore_checkpoint
+    gin_file,
+    dataset_path,
+    urmp,
+    device,
+    instrument,
+    load_data_to_memory,
+    with_wandb,
+    restore_checkpoint,
 ):
     gin.parse_config_file(gin_file)
-    model = get_model()
-    data = URMPDataModule(
-        "/import/c4dm-datasets/URMP/synth-dataset/4s-dataset",
-        instrument,
-        load_to_memory=load_data_to_memory,
-        num_workers=16,
-        shuffle=True,
-    )
+    model = get_model(with_wandb=with_wandb)
 
-    lr_logger = pl.callbacks.LearningRateMonitor(logging_interval="epoch")
-    logger = pl.loggers.WandbLogger(project="neural-timbre-shaping")
-    logger.watch(model, log="parameters")
+    if urmp:
+        data = URMPDataModule(
+            dataset_path,
+            instrument,
+            load_to_memory=load_data_to_memory,
+            num_workers=16,
+            shuffle=True,
+        )
+    else:
+        data = GeneralDataModule(
+            dataset_path,
+            load_to_memory=load_data_to_memory,
+            num_workers=16,
+            shuffle=True,
+        )
 
     checkpointing = pl.callbacks.ModelCheckpoint(
         monitor="val/loss", save_top_k=1, save_last=True
     )
+    callbacks = [checkpointing]
+    if with_wandb:
+        lr_logger = pl.callbacks.LearningRateMonitor(logging_interval="epoch")
+        callbacks.append(lr_logger)
+        logger = pl.loggers.WandbLogger(project="neural-waveshaping-synthesis")
+        logger.watch(model, log="parameters")
+
 
     kwargs = trainer_kwargs()
     trainer = pl.Trainer(
-        logger=logger,
-        callbacks=[lr_logger, checkpointing],
+        logger=logger if with_wandb else None,
+        callbacks=callbacks,
         gpus=device,
         resume_from_checkpoint=restore_checkpoint if restore_checkpoint != "" else None,
-        **kwargs,
+        **kwargs
     )
     trainer.fit(model, data)
 

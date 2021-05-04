@@ -28,6 +28,6 @@ Reverb.length_in_seconds = 2
 Reverb.sr = %sample_rate
 
 
-TimbreTransferNEWT.n_waveshapers = %n_waveshapers
-TimbreTransferNEWT.control_hop = %control_hop
-TimbreTransferNEWT.sample_rate = %sample_rate
+NeuralWaveshaping.n_waveshapers = %n_waveshapers
+NeuralWaveshaping.control_hop = %control_hop
+NeuralWaveshaping.sample_rate = %sample_rate

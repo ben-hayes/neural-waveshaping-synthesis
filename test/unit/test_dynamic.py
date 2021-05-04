@@ -1,6 +1,6 @@
 import torch
 
-from nts.models.modules.dynamic import DynamicFFTConv1d, DynamicSincConv1d
+from neural_waveshaping_synthesis.models.modules.dynamic import DynamicFFTConv1d, DynamicSincConv1d
 
 
 # def test_dynamic_fft():

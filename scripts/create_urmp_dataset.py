@@ -4,8 +4,8 @@ from pathlib import Path
 import click
 import gin
 
-from nts.data.utils.create_dataset import create_dataset
-from nts.utils import seed_all
+from neural_waveshaping_synthesis.data.utils.create_dataset import create_dataset
+from neural_waveshaping_synthesis.utils import seed_all
 
 INSTRUMENTS = (
     "vn",

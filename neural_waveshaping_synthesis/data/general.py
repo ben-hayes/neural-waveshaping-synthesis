@@ -6,7 +6,7 @@ import pytorch_lightning as pl
 import torch
 
 
-class URMPDataset(torch.utils.data.Dataset):
+class GeneralDataset(torch.utils.data.Dataset):
     def __init__(self, path: str, split: str = "train", load_to_memory: bool = True):
         super().__init__()
         # split = "train"
@@ -58,17 +58,16 @@ class URMPDataset(torch.utils.data.Dataset):
 
 
 @gin.configurable
-class URMPDataModule(pl.LightningDataModule):
+class GeneralDataModule(pl.LightningDataModule):
     def __init__(
         self,
-        urmp_root: str,
-        instrument: str,
+        data_root: str,
         batch_size: int = 16,
         load_to_memory: bool = True,
         **dataloader_args
     ):
         super().__init__()
-        self.data_dir = os.path.join(urmp_root, instrument)
+        self.data_dir = data_root
         self.batch_size = batch_size
         self.dataloader_args = dataloader_args
         self.load_to_memory = load_to_memory
@@ -78,10 +77,10 @@ class URMPDataModule(pl.LightningDataModule):
 
     def setup(self, stage: str = None):
         if stage == "fit":
-            self.urmp_train = URMPDataset(self.data_dir, "train", self.load_to_memory)
-            self.urmp_val = URMPDataset(self.data_dir, "val", self.load_to_memory)
+            self.urmp_train = GeneralDataset(self.data_dir, "train", self.load_to_memory)
+            self.urmp_val = GeneralDataset(self.data_dir, "val", self.load_to_memory)
         elif stage == "test" or stage is None:
-            self.urmp_test = URMPDataset(self.data_dir, "test", self.load_to_memory)
+            self.urmp_test = GeneralDataset(self.data_dir, "test", self.load_to_memory)
 
     def _make_dataloader(self, dataset):
         return torch.utils.data.DataLoader(

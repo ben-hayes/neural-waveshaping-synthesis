@@ -7,8 +7,8 @@ from scipy.stats import describe
 import torch
 from tqdm import trange
 
-from nts.models.timbre_transfer_newt import TimbreTransferNEWT
-from nts.models.modules.shaping import FastNEWT
+from neural_waveshaping_synthesis.models.neural_waveshaping import NeuralWaveshaping
+from neural_waveshaping_synthesis.models.modules.shaping import FastNEWT
 
 
 @click.command()
@@ -38,7 +38,7 @@ def main(
         device=device,
         requires_grad=False,
     )
-    model = TimbreTransferNEWT()
+    model = NeuralWaveshaping()
     if use_fast_newt:
         model.newt = FastNEWT(model.newt)
     model.eval()

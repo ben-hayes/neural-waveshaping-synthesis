@@ -1,7 +1,7 @@
 import torch
 
-from nts.data.urmp_classification import URMPClassificationDataset
-from nts.evaluation.inception import InceptionSingleChannel, InceptionInstrumentClassifier
+from neural_waveshaping_synthesis.data.urmp_classification import URMPClassificationDataset
+from neural_waveshaping_synthesis.evaluation.inception import InceptionSingleChannel, InceptionInstrumentClassifier
 
 
 def test_inception_model():

@@ -7,8 +7,8 @@ import pandas as pd
 import torch
 from tqdm import trange
 
-from nts.models.timbre_transfer_newt import TimbreTransferNEWT
-from nts.models.modules.shaping import FastNEWT
+from neural_waveshaping_synthesis.models.neural_waveshaping import NeuralWaveshaping
+from neural_waveshaping_synthesis.models.modules.shaping import FastNEWT
 
 BUFFER_SIZES = [256, 512, 1024, 2048, 4096, 8192, 16384, 32768]
 
@@ -32,7 +32,7 @@ def main(
     model_name,
 ):
     gin.parse_config_file(gin_file)
-    model = TimbreTransferNEWT()
+    model = NeuralWaveshaping()
     if use_fast_newt:
         model.newt = FastNEWT(model.newt)
     model.eval()
