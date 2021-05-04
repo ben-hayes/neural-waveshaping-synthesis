@@ -2,60 +2,58 @@
 
 This repository is the official implementation of [Neural Waveshaping Synthesis](#). 
 
-
-
 ## Requirements
 
-To install requirements:
+To install:
 
 ```setup
 pip install -r requirements.txt
 pip install -e .
 ```
 
->📋  Describe how to set up the environment, e.g. pip/conda/docker commands, download datasets, etc...
+We recommend installing in a virtual environment.
+
+## Data
+
+We trained our checkpoints on the [URMP](http://www2.ece.rochester.edu/projects/air/projects/URMP.html) dataset.
+Once downloaded, the dataset can be preprocessed using `scripts/create_urmp_dataset.py`. 
+This will consolidate recordings of each instrument within the dataset and preprocess them according to the pipeline in the paper.
+
+```bash
+python scripts/create_urmp_dataset.py \
+  --gin-file gin/data/urmp_4second_crepe.gin \ 
+  --data-directory /path/to/urmp \
+  --output-directory /path/to/output \
+  --device cuda:0  # torch device string for CREPE model
+```
+
+Alternatively, you can supply your own dataset and use the general `create_dataset.py` script:
+
+```bash
+python scripts/create_dataset.py \
+  --gin-file gin/data/urmp_4second_crepe.gin \ 
+  --data-directory /path/to/dataset \
+  --output-directory /path/to/output \
+  --device cuda:0  # torch device string for CREPE model
+```
 
 ## Training
 
-To train the model(s) in the paper, run this command:
+To train a model on the URMP dataset, use this command:
 
-```train
-python train.py --input-data <path_to_data> --alpha 10 --beta 20
+```bash
+python scripts/train.py \
+  --gin-file gin/train/train_newt.gin \
+  --dataset-path /path/to/processed/urmp \
+  --urmp \
+  --instrument vn \  # select URMP instrument with abbreviated string
+  --load-data-to-memory
 ```
 
->📋  Describe how to train the models, with example commands on how to train the models in your paper, including the full training procedure and appropriate hyperparameters.
-
-## Evaluation
-
-To evaluate my model on URMP, run:
-
-```eval
-python eval.py --model-file mymodel.pth --benchmark imagenet
+Or to use a non-URMP dataset:
+```bash
+python scripts/train.py \
+  --gin-file gin/train/train_newt.gin \
+  --dataset-path /path/to/processed/data \
+  --load-data-to-memory
 ```
-
->📋  Describe how to evaluate the trained models on benchmarks reported in the paper, give commands that produce the results (section below).
-
-## Pre-trained Models
-
-You can download pretrained models here:
-
-- [My awesome model](https://drive.google.com/mymodel.pth) trained on ImageNet using parameters x,y,z. 
-
->📋  Give a link to where/how the pretrained models can be downloaded and how they were trained (if applicable).  Alternatively you can have an additional column in your results table with a link to the models.
-
-## Results
-
-Our model achieves the following performance on :
-
-### [Image Classification on ImageNet](https://paperswithcode.com/sota/image-classification-on-imagenet)
-
-| Model name         | Top 1 Accuracy  | Top 5 Accuracy |
-| ------------------ |---------------- | -------------- |
-| My awesome model   |     85%         |      95%       |
-
->📋  Include a table of results from your paper, and link back to the leaderboard for clarity and context. If your main result is a figure, include that figure and link to the command or notebook to reproduce it. 
-
-
-## Contributing
-
->📋  Pick a licence and describe how to contribute to your code repository. 
