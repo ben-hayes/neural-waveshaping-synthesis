@@ -7,6 +7,7 @@ from tqdm import tqdm
 import torch
 
 from nts.data.urmp import URMPDataset
+from nts.models.modules.shaping import FastNEWT
 from nts.models.timbre_transfer_newt import TimbreTransferNEWT
 from nts.utils import make_dir_if_not_exists
 
@@ -21,6 +22,7 @@ from nts.utils import make_dir_if_not_exists
 @click.option("--device", default="cuda:0")
 @click.option("--batch-size", default=8)
 @click.option("--num_workers", default=16)
+@click.option("--use-fastnewt", is_flag=True)
 def main(
     model_gin,
     model_checkpoint,
@@ -31,6 +33,7 @@ def main(
     device,
     batch_size,
     num_workers,
+    use_fastnewt
 ):
     gin.parse_config_file(model_gin)
     make_dir_if_not_exists(output_path)
@@ -41,8 +44,13 @@ def main(
     )
 
     device = torch.device(device)
-    model = TimbreTransferNEWT.load_from_checkpoint(model_checkpoint).to(device)
+    model = TimbreTransferNEWT.load_from_checkpoint(model_checkpoint)
     model.eval()
+
+    if use_fastnewt:
+        model.newt = FastNEWT(model.newt)
+    
+    model = model.to(device)
 
     for i, batch in enumerate(tqdm(data_loader)):
         with torch.no_grad():
