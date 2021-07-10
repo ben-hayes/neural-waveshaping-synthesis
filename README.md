@@ -1,8 +1,21 @@
-# Neural Waveshaping Synthesis
+<h1 align="center">neural waveshaping synthesis</h1>
+<h4 align="center">real-time neural audio synthesis in the waveform domain</h4>
+<p align="center">by <em>Ben Hayes, Charalampos Saitis, György Fazekas</em></p>
+
+<div align="center">
+    <h4>
+        <a href="#" target="_blank">paper</a> •
+        <a href="https://benhayes.net/projects/nws/" target="_blank">website</a> • 
+        <a href="https://colab.research.google.com/github/ben-hayes/neural-waveshaping-synthesis/blob/main/colab/NEWT_Timbre_Transfer.ipynb" target="_blank">colab</a> • 
+        <a href="https://benhayes.net/projects/nws/#audio-examples">audio</a>
+    </h4>
+    <p>
+    by <em>Ben Hayes, Charalampos Saitis, György Fazekas</em>
+    </p>
+</div>
+<p align="center"><img src="https://benhayes.net/assets/img/newt_shapers.png" /></p>
 
 This repository is the official implementation of [Neural Waveshaping Synthesis](#). 
-
-[Colab Notebook](https://colab.research.google.com/github/anon9119/anon-project-1/blob/main/colab/NEWT_Timbre_Transfer.ipynb)
 
 ## Requirements
 
