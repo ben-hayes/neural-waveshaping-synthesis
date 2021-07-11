@@ -2,7 +2,7 @@
 <h4 align="center">real-time neural audio synthesis in the waveform domain</h4>
 <div align="center">
 <h4>
-    <a href="#" target="_blank">paper</a> •
+    <a href="https://benhayes.net/assets/pdf/nws_arxiv.pdf" target="_blank">paper</a> •
         <a href="https://benhayes.net/projects/nws/" target="_blank">website</a> • 
         <a href="https://colab.research.google.com/github/ben-hayes/neural-waveshaping-synthesis/blob/main/colab/NEWT_Timbre_Transfer.ipynb" target="_blank">colab</a> • 
         <a href="https://benhayes.net/projects/nws/#audio-examples">audio</a>
