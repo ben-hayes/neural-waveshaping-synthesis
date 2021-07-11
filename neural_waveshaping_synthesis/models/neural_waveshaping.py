@@ -1,5 +1,3 @@
-import math
-
 import auraloss
 import gin
 import pytorch_lightning as pl
@@ -9,11 +7,8 @@ import torch.nn.functional as F
 import wandb
 
 from .modules.dynamic import TimeDistributedMLP
-from .modules.generators import Wavetable, FIRNoiseSynth, HarmonicOscillator
-from .modules.loss import WaveformStatisticLoss
+from .modules.generators import FIRNoiseSynth, HarmonicOscillator
 from .modules.shaping import NEWT, Reverb
-from .modules.tcn import CausalTCN
-from .modules.utils import LearnableUpsampler
 
 gin.external_configurable(nn.GRU, module="torch.nn")
 gin.external_configurable(nn.Conv1d, module="torch.nn")
@@ -153,7 +148,7 @@ class NeuralWaveshaping(pl.LightningModule):
             self._log_audio("original", audio[0].detach().cpu().squeeze())
             self._log_audio("recon", recon[0].detach().cpu().squeeze())
         return loss
-    
+
     def test_step(self, batch, batch_idx):
         loss, recon, audio = self._run_step(batch)
         self.log(

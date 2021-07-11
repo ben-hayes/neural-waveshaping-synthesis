@@ -1,16 +1,10 @@
-import math
-
 import gin
 import torch
 import torch.fft
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .activations import MultiActivationBank
-from .dynamic import DynamicFFTConv1d, DynamicSincConv1d, FiLM, TimeDistributedMLP
-from .filters import SincConv1d
-from .generators import AdditiveNoise, ParallelNoise
-from .utils import CausalPad, LearnableUpsampler
+from .dynamic import FiLM, TimeDistributedMLP
 
 
 class Sine(nn.Module):
@@ -39,91 +33,8 @@ class TrainableNonlinearity(nn.Module):
 
         self.net = nn.Sequential(*layers)
 
-    # def set_requires_grad(self, value: bool):
-    #     for layer in self.net:
-    #         if type(layer) != nn.Tanh:
-    #             for p in layer.parameters():
-    #                 p.requires_grad = value
-
     def forward(self, x):
         return self.net(self.input_scale * x)
-
-
-@gin.configurable
-class NoiseSaturateFilter(nn.Module):
-    def __init__(
-        self,
-        in_channels: int,
-        out_channels: int,
-        filter_taps: int = 128,
-        control_embedding_size: int = 32,
-        skip_connection: bool = True,
-        filter_type: str = "static",
-        **filter_params,
-    ):
-        super().__init__()
-        self.skip_connection = skip_connection
-        if self.skip_connection:
-            self.skip_scale = nn.Parameter(torch.randn(1, out_channels, 1))
-
-        self.upsample = LearnableUpsampler(256, 128, control_embedding_size)
-        self.conditioning = nn.Conv1d(control_embedding_size, in_channels * 2, 1)
-        self.noise = AdditiveNoise(in_channels, init_range=0.001)
-        self.film1_size = in_channels
-        self.film1 = FiLM()
-        self.saturate = TrainableNonlinearity(in_channels, 4)
-        self.padding = CausalPad(filter_taps - 1)
-
-        self.dynamic_filter = False
-        if filter_type == "dynamic":
-            self.dynamic_filter = True
-            self.filter = DynamicSincConv1d(
-                in_channels,
-                out_channels,
-                filter_taps,
-                filter_taps // 2,
-                6,
-                control_embedding_size,
-                **filter_params,
-            )
-        elif filter_type == "sinc":
-            self.filter = nn.Sequential(
-                CausalPad(filter_taps - 1 if filter_taps % 2 == 1 else filter_taps),
-                SincConv1d(in_channels, out_channels, filter_taps, 0, **filter_params),
-            )
-        elif filter_type == "static":
-            self.filter = nn.Sequential(
-                CausalPad(filter_taps - 1),
-                nn.Conv1d(
-                    in_channels,
-                    out_channels,
-                    filter_taps,
-                    **filter_params,
-                ),
-            )
-        else:
-            raise ValueError("Filter type %s not known." % filter_type)
-
-    def _get_conditioning(self, control_embedding):
-        control = self.upsample(control_embedding)
-        conditioning = self.conditioning(control)
-        gamma1 = conditioning[:, : self.film1_size]
-        beta1 = conditioning[:, self.film1_size :]
-        return gamma1, beta1
-
-    def forward(self, x: torch.Tensor, control_embedding: torch.Tensor):
-        g1, b1 = self._get_conditioning(control_embedding)
-
-        y = self.noise(x)
-        y = self.film1(y, g1, b1)
-        y = self.saturate(y)
-        if self.dynamic_filter:
-            # x = self.filter(x, torch.cat((control_embedding, x), dim=1))
-            y = self.filter(y, control_embedding)
-        else:
-            y = self.filter(y)
-
-        return x * self.skip_scale + y if self.skip_connection else y
 
 
 @gin.configurable
@@ -245,20 +156,14 @@ class Reverb(nn.Module):
         super().__init__()
         self.ir = nn.Parameter(torch.randn(1, sr * length_in_seconds - 1) * 1e-6)
         self.register_buffer("initial_zero", torch.zeros(1, 1))
-        # self.register_buffer("time", torch.arange(length_in_samples) / sr)
 
     def forward(self, x):
-        ir_ = torch.cat(
-            (self.initial_zero, self.ir), dim=-1
-        )  # * torch.exp(-self.time * torch.exp(-self.decay))
+        ir_ = torch.cat((self.initial_zero, self.ir), dim=-1)
         if x.shape[-1] > ir_.shape[-1]:
             ir_ = F.pad(ir_, (0, x.shape[-1] - ir_.shape[-1]))
             x_ = x
         else:
             x_ = F.pad(x, (0, ir_.shape[-1] - x.shape[-1]))
-        # return (1 - self.wet) * x + self.wet * torch.fft.irfft(
-        #     torch.fft.rfft(x_) * torch.fft.rfft(ir_)
-        # )
         return (
             x
             + torch.fft.irfft(torch.fft.rfft(x_) * torch.fft.rfft(ir_))[

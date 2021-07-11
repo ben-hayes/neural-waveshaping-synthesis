@@ -1,5 +1,4 @@
-from functools import partial
-from typing import Callable, Optional, Sequence
+from typing import Callable, Optional
 import warnings
 
 import gin
@@ -7,7 +6,6 @@ import librosa
 import numpy as np
 
 from .upsampling import linear_interpolation
-from ...utils import apply
 
 
 def compute_power_spectrogram(
@@ -37,7 +35,7 @@ def perform_perceptual_weighting(
         weights = librosa.A_weighting(centre_frequencies)
 
     weights = np.expand_dims(weights, axis=1)
-    weighted_spectrogram = power_spectrogram_in_db #+ weights
+    weighted_spectrogram = power_spectrogram_in_db  # + weights
     return weighted_spectrogram
 
 
@@ -63,7 +61,7 @@ def extract_perceptual_loudness(
         loudness = interpolate_fn(
             loudness, n_fft, hop_length, original_length=audio.size
         )
-    
+
     if normalise:
         loudness = (loudness + 80) / 80
 
@@ -75,7 +73,7 @@ def extract_rms(
     audio: np.ndarray,
     window_size: int = 2048,
     hop_length: int = 512,
-    sample_rate: Optional[float] = 16000.,
+    sample_rate: Optional[float] = 16000.0,
     interpolate_fn: Optional[Callable] = linear_interpolation,
 ):
     # pad audio to centre frames
@@ -86,8 +84,6 @@ def extract_rms(
     root = np.sqrt(mean)
     if interpolate_fn:
         assert sample_rate is not None, "Must provide sample rate if upsampling"
-        root = interpolate_fn(
-            root, window_size, hop_length, original_length=audio.size
-        )
-    
+        root = interpolate_fn(root, window_size, hop_length, original_length=audio.size)
+
     return root
