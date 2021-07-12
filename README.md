@@ -13,7 +13,11 @@
 </div>
 <p align="center"><img src="https://benhayes.net/assets/img/newt_shapers.png" /></p>
 
-This repository is the official implementation of [Neural Waveshaping Synthesis](#). 
+This repository is the official implementation of [Neural Waveshaping Synthesis](https://benhayes.net/projects/nws/).
+
+## Model Architecture
+
+<p align="center"><img src="https://benhayes.net/assets/img/nws.png" /></p>
 
 ## Requirements
 
