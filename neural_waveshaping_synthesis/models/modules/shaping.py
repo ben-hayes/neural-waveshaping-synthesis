@@ -112,7 +112,7 @@ class FastNEWT(NEWT):
         table_max: float,
     ):
         sample_values = torch.linspace(table_min, table_max, table_size).expand(
-            1, n_waveshapers, table_size
+            1, n_waveshapers, table_size, device=newt.device
         )
         lookup_table = newt.shaping_fn(sample_values)[0]
         return nn.Parameter(lookup_table)
