@@ -102,6 +102,7 @@ class FastNEWT(NEWT):
         self.lookup_table = self._init_lookup_table(
             newt, table_size, self.n_waveshapers, table_min, table_max
         )
+        self.to(next(iter(newt.parameters())).device)
 
     def _init_lookup_table(
         self,
@@ -112,7 +113,7 @@ class FastNEWT(NEWT):
         table_max: float,
     ):
         sample_values = torch.linspace(table_min, table_max, table_size).expand(
-            1, n_waveshapers, table_size, device=newt.device
+            1, n_waveshapers, table_size, device=next(iter(newt.parameters())).device
         )
         lookup_table = newt.shaping_fn(sample_values)[0]
         return nn.Parameter(lookup_table)
