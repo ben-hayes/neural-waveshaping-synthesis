@@ -39,21 +39,22 @@ use_gpu = False
 dev_string = "cuda" if use_gpu else "cpu"
 device = torch.device(dev_string)
 
-selected_checkpoint_name = "Violin"
-selected_checkpoint = checkpoints[selected_checkpoint_name]
 
-checkpoint_path = os.path.join(
-    "checkpoints/nws", selected_checkpoint)
-model = NeuralWaveshaping.load_from_checkpoint(
-    os.path.join(checkpoint_path, "last.ckpt")).to(device)
-original_newt = model.newt
-model.eval()
-data_mean = np.load(
-    os.path.join(checkpoint_path, "data_mean.npy"))
-data_std = np.load(
-    os.path.join(checkpoint_path, "data_std.npy"))
 
-def inference(wav):
+def inference(wav, instrument):
+    selected_checkpoint_name = instrument
+    selected_checkpoint = checkpoints[selected_checkpoint_name]
+
+    checkpoint_path = os.path.join(
+      "checkpoints/nws", selected_checkpoint)
+    model = NeuralWaveshaping.load_from_checkpoint(
+        os.path.join(checkpoint_path, "last.ckpt")).to(device)
+    original_newt = model.newt
+    model.eval()
+    data_mean = np.load(
+        os.path.join(checkpoint_path, "data_mean.npy"))
+    data_std = np.load(
+        os.path.join(checkpoint_path, "data_std.npy"))
     rate, audio = wavfile.read(wav.name)
     audio = convert_to_float32_audio(make_monophonic(audio))
     audio = resample_audio(audio, rate, model.sample_rate)
@@ -122,7 +123,8 @@ def inference(wav):
     write('test.wav', sample_rates, out.detach().cpu().numpy().T)
     return 'test.wav'
 
-inputs = gr.inputs.Audio(label="input audio", type="file")
+inputs = [gr.inputs.Audio(label="input audio", type="file"), 
+          gr.inputs.Dropdown(["Violin", "Flute", "Trumpet"], type="value", default="Violin", label="Instrument")]
 outputs =  gr.outputs.Audio(label="output audio", type="file")
 
 
