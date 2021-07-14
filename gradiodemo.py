@@ -17,6 +17,11 @@ from neural_waveshaping_synthesis.models.modules.shaping import FastNEWT
 from neural_waveshaping_synthesis.models.neural_waveshaping import NeuralWaveshaping
 import gradio as gr
 
+torch.hub.download_url_to_file('https://benhayes.net/assets/audio/nws_examples/tt/tt1_in.wav', 'test1.wav')
+torch.hub.download_url_to_file('https://benhayes.net/assets/audio/nws_examples/tt/tt2_in.wav', 'test2.wav')
+torch.hub.download_url_to_file('https://benhayes.net/assets/audio/nws_examples/tt/tt3_in.wav', 'test3.wav')
+
+
 try:
   gin.constant("device", "cuda" if torch.cuda.is_available() else "cpu")
 except ValueError as err:
@@ -112,18 +117,23 @@ def inference(wav):
         start_time = time.time()
         out = model(f0_t.expand(1, 1, -1), control.unsqueeze(0))
         run_time = time.time() - start_time
+    sample_rates=model.sample_rate
     rtf = (audio.shape[-1] / model.sample_rate) / run_time
-    write('test.wav', rate, out.detach().cpu().numpy().T)
+    write('test.wav', sample_rates, out.detach().cpu().numpy().T)
     return 'test.wav'
 
-inputs = gr.inputs.Audio(type="file")
-outputs =  gr.outputs.Audio(type="file")
+inputs = gr.inputs.Audio(label="input audio", type="file")
+outputs =  gr.outputs.Audio(label="output audio", type="file")
 
 
-title = "NEWT"
-description = "demo for NEWT: efficient neural audio synthesis in the waveform domain. To use it, simply add your audio, or click one of the examples to load them. Read more at the links below."
-article = "<p style='text-align: center'><a href='https://arxiv.org/abs/2106.06103'>Conditional Variational Autoencoder with Adversarial Learning for End-to-End Text-to-Speech</a> | <a href='https://github.com/jaywalnut310/vits'>Github Repo</a></p>"
+title = "neural waveshaping synthesis"
+description = "demo for neural waveshaping synthesis: efficient neural audio synthesis in the waveform domain for timbre transfer. To use it, simply add your audio, or click one of the examples to load them. Read more at the links below. Input audio should be in WAV format similar to the example audio below"
+article = "<p style='text-align: center'><a href='https://arxiv.org/abs/2107.05050'>neural waveshaping synthesis</a> | <a href='https://github.com/ben-hayes/neural-waveshaping-synthesis'>Github Repo</a></p>"
 
+examples = [
+ ['test1.wav'],
+ ['test2.wav'],
+ ['test3.wav']
+]
 
-
-gr.Interface(inference, inputs, outputs, title=title, description=description, article=article).launch()
+gr.Interface(inference, inputs, outputs, title=title, description=description, article=article, examples=examples).launch()
