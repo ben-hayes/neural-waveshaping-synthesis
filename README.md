@@ -3,8 +3,8 @@
 <div align="center">
 <h4>
     <a href="https://benhayes.net/assets/pdf/nws_arxiv.pdf" target="_blank">paper</a> •
-        <a href="https://benhayes.net/projects/nws/" target="_blank">website</a> • 
-        <a href="https://colab.research.google.com/github/ben-hayes/neural-waveshaping-synthesis/blob/main/colab/NEWT_Timbre_Transfer.ipynb" target="_blank">colab</a> • 
+        <a href="https://benhayes.net/projects/nws/" target="_blank">website</a> •
+        <a href="https://colab.research.google.com/github/ben-hayes/neural-waveshaping-synthesis/blob/main/colab/NEWT_Timbre_Transfer.ipynb" target="_blank">colab</a> •
         <a href="https://benhayes.net/projects/nws/#audio-examples">audio</a>
     </h4>
     <p>
@@ -14,6 +14,8 @@
 <p align="center"><img src="https://benhayes.net/assets/img/newt_shapers.png" /></p>
 
 This repository is the official implementation of [Neural Waveshaping Synthesis](https://benhayes.net/projects/nws/).
+
+[Interactive demo and Docker model on Replicate](https://replicate.ai/ben-hayes/neural-waveshaping-synthesis)
 
 ## Model Architecture
 
@@ -33,12 +35,12 @@ We recommend installing in a virtual environment.
 ## Data
 
 We trained our checkpoints on the [URMP](http://www2.ece.rochester.edu/projects/air/projects/URMP.html) dataset.
-Once downloaded, the dataset can be preprocessed using `scripts/create_urmp_dataset.py`. 
+Once downloaded, the dataset can be preprocessed using `scripts/create_urmp_dataset.py`.
 This will consolidate recordings of each instrument within the dataset and preprocess them according to the pipeline in the paper.
 
 ```bash
 python scripts/create_urmp_dataset.py \
-  --gin-file gin/data/urmp_4second_crepe.gin \ 
+  --gin-file gin/data/urmp_4second_crepe.gin \
   --data-directory /path/to/urmp \
   --output-directory /path/to/output \
   --device cuda:0  # torch device string for CREPE model
@@ -48,7 +50,7 @@ Alternatively, you can supply your own dataset and use the general `create_datas
 
 ```bash
 python scripts/create_dataset.py \
-  --gin-file gin/data/urmp_4second_crepe.gin \ 
+  --gin-file gin/data/urmp_4second_crepe.gin \
   --data-directory /path/to/dataset \
   --output-directory /path/to/output \
   --device cuda:0  # torch device string for CREPE model

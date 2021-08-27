@@ -1,0 +1,23 @@
+predict: "predict.py:Predictor"
+build:
+  system_packages:
+    - "libsndfile1-dev"
+    - "ffmpeg"
+  python_version: "3.8"
+  python_packages:
+    - "auraloss==0.2.1"
+    - "black==20.8b1"
+    - "click==7.1.2"
+    - "gin-config==0.4.0"
+    - "librosa==0.8.0"
+    - "numpy==1.20.1"
+    - "pytorch_lightning==1.1.2"
+    - "resampy==0.2.2"
+    - "scipy==1.6.1"
+    - "torch==1.7.1"
+    - "torchcrepe==0.0.12"
+    - "wandb==0.12.1"
+    - "youtube-dl==2021.6.6"
+  pre_install:
+    - "pip install -q https://github.com/tugstugi/dl-colab-notebooks/archive/colab_utils.zip"
+  gpu: true
