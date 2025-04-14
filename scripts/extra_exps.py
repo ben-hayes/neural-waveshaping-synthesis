@@ -299,10 +299,10 @@ def compute_rms(
     hop_length = int(0.025 * sample_rate)
 
     target_rms = librosa.feature.rms(
-        y=target.mean(axis=0), frame_length=win_length, hop_length=hop_length
+        y=target, frame_length=win_length, hop_length=hop_length
     )
     pred_rms = librosa.feature.rms(
-        y=pred.mean(axis=0), frame_length=win_length, hop_length=hop_length
+        y=pred, frame_length=win_length, hop_length=hop_length
     )
 
     target_norm = np.linalg.vector_norm(target_rms, axis=-1, ord=2)
@@ -342,6 +342,7 @@ def compute_tm_and_td(
     input_signals = torch.sin(input_phase)
     input_signals = input_signals * alphas[:, None] + betas[:, None]
 
+    print(input_signals.shape)
     output_signals = model(input_signals)
     output_signals = output_signals.detach().cpu().numpy()
 
@@ -511,9 +512,12 @@ def test(
     with torch.no_grad():
         pred = model(input_signal)
 
-    mss = compute_mss(target, pred, sample_rate)
-    mfcc = compute_mfcc_distance(target, pred, sample_rate)
-    rms = compute_rms(target, pred, sample_rate)
+    target_cpu = target.detach().cpu().numpy()
+    pred_cpu = pred.detach().cpu().numpy()
+
+    mss = compute_mss(target_cpu, pred_cpu, sample_rate)
+    mfcc = compute_mfcc_distance(target_cpu, pred_cpu, sample_rate)
+    rms = compute_rms(target_cpu, pred_cpu, sample_rate)
 
     # TM, TD, TC
     alpha_min = model.alpha_in.min().item()
@@ -526,7 +530,7 @@ def test(
 
     tm, td = compute_tm_and_td(
         target,
-        model,
+        model.newt,
         alpha_min,
         alpha_max,
         beta_min,
@@ -534,14 +538,14 @@ def test(
         f0_min,
         f0_max,
         frame_length,
-        n_samples,
         sample_rate=sample_rate,
+        n_samples=n_samples,
         device=device,
     )
 
     tc = compute_tc(
         target,
-        model,
+        model.newt,
         alpha_min,
         alpha_max,
         beta_min,
