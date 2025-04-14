@@ -1,0 +1,2 @@
+--width 100  --depth 5  --initial_bandwidth 1.0  --later_bandwidth 1.0  --oversample 8.0  --activation sin
+--width 180  --depth 3  --initial_bandwidth 1.0  --later_bandwidth 1.0  --oversample 8.0  --activation sin
