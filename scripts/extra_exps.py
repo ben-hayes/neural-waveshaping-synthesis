@@ -12,6 +12,7 @@ import torch.nn as nn
 import torchaudio
 import torchaudio.functional as Fta
 from loguru import logger
+from tqdm import tqdm
 
 ####################
 # Utilities
@@ -326,6 +327,7 @@ def compute_tm_and_td(
     frame_length: int = 1024,
     sample_rate: float = 16000.0,
     n_samples: int = 10_000,
+    batch_size: int = 1024,
     device: str = "cuda",
 ) -> Tuple[np.ndarray, np.ndarray]:
     alphas = torch.empty(n_samples, device=device).uniform_(alpha_min, alpha_max)
@@ -342,8 +344,10 @@ def compute_tm_and_td(
     input_signals = torch.sin(input_phase)
     input_signals = input_signals * alphas[:, None] + betas[:, None]
 
-    print(input_signals.shape)
-    output_signals = model(input_signals)
+    batches = input_signals.split(batch_size)
+    output_signals = torch.cat(
+        [model(batch) for batch in tqdm(batches, desc="Inference")], dim=0
+    )
     output_signals = output_signals.detach().cpu().numpy()
 
     target_mfcc = librosa.feature.mfcc(
