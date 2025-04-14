@@ -188,6 +188,8 @@ def load_segment(
     else:
         audio_file = random.choice(audio_files)
 
+    audio_file = str(audio_file)
+
     control_file = audio_file.replace("audio", "control")
     audio = np.load(str(audio_file))
 
