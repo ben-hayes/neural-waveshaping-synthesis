@@ -130,7 +130,7 @@ class LearnableWaveshaper(nn.Module):
         # The shaping network
         self.newt = NEWT(
             width=width,
-            depth=depth,
+            depth=depth - 2,
             initial_bandwidth=initial_bandwidth,
             later_bandwidth=later_bandwidth,
             oversample=oversample,
@@ -649,7 +649,6 @@ def experiment(
         writer.writerows(results)
 
     print(f"Experiment results saved to {save_path}")
-
 
 
 if __name__ == "__main__":
