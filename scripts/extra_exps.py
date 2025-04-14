@@ -389,6 +389,7 @@ def compute_tc(
     frame_length: int = 1024,
     sample_rate: float = 16000.0,
     n_samples: int = 10_000,
+    batch_size: int = 1024,
     device: str = "cuda",
 ):
     transform = torchaudio.transforms.MFCC(
@@ -420,11 +421,15 @@ def compute_tc(
         mfccs = transform(output_signals).squeeze()
         return mfccs
 
-    jac = torch.func.vmap(torch.func.jacrev(func))(alphabetas)
-    _, S, _ = torch.linalg.svd(jac)
-    tc = S.max(dim=-1).values.mean().detach()
+    batches = input_signals.split(batch_size)
+    tcs = []
+    for batch in tqdm(batches, desc="Inference"):
+        jac = torch.func.vmap(torch.func.jacrev(func))(alphabetas)
+        _, S, _ = torch.linalg.svd(jac)
+        tc = S.max(dim=-1).values.mean().detach()
+        tcs.append(tc)
 
-    return tc.item()
+    return torch.cat(tcs, dim=0).mean().item()
 
 
 ####################
@@ -556,8 +561,8 @@ def test(
         beta_max,
         f0_median,
         frame_length,
-        n_samples,
         sample_rate=sample_rate,
+        n_samples=n_samples,
         device=device,
     )
 
