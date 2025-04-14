@@ -553,7 +553,6 @@ def test(
     )
 
     tc = compute_tc(
-        target_cpu,
         model.newt,
         alpha_min,
         alpha_max,
