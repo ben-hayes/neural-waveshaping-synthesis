@@ -533,7 +533,7 @@ def test(
     f0_median = f0_signal.median().item()
 
     tm, td = compute_tm_and_td(
-        target,
+        target_cpu,
         model.newt,
         alpha_min,
         alpha_max,
@@ -548,7 +548,7 @@ def test(
     )
 
     tc = compute_tc(
-        target,
+        target_cpu,
         model.newt,
         alpha_min,
         alpha_max,
